@@ -1,6 +1,6 @@
 local screens = {
-    menu  = require("screens.menu"),
-    cycle = require("screens.cycle"),
+    menu        = require("screens.menu"),
+    oscillating = require("screens.oscillating"),
 }
 
 local currentScreen = "menu"
