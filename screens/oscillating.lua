@@ -1,7 +1,7 @@
 local oscillating = {}
 
 local RADIUS = 24
-local SPEED_HZ = 0.5   -- full sweeps per second (one left→right = 1 sweep)
+local SPEED_HZ = 1.2   -- full sweeps per second (one left→right = 1 sweep)
 local MARGIN = RADIUS + 40
 
 local x, direction, speed
