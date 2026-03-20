@@ -1,6 +1,6 @@
 function love.conf(t)
     t.title = "EMDR3"
-    t.version = "11.4"
+    t.version = "11.5"
 
     t.window.width = 1280
     t.window.height = 720
@@ -12,6 +12,8 @@ function love.conf(t)
     t.modules.audio = true
     t.modules.mouse = true
     t.modules.timer = true
+
+    t.modules.thread = true
 
     t.modules.joystick = false
     t.modules.physics = false

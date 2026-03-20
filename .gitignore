@@ -1,4 +1,8 @@
 .env
 
+# Compiled native modules
+lib/*.so
+lib/*.dll
+
 # Old program
 archive/
