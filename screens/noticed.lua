@@ -10,13 +10,10 @@ function noticed.load()
     finished = false
     delayTimer = 0
 
-    -- Scan for what_noticed_*.mp3 variants
+    -- Pick from all files in the wdyn folder
     local variants = {}
-    local items = love.filesystem.getDirectoryItems("resources/audio")
-    for _, name in ipairs(items) do
-        if name:match("^what_noticed_%d+%.mp3$") then
-            table.insert(variants, "resources/audio/" .. name)
-        end
+    for _, name in ipairs(love.filesystem.getDirectoryItems("resources/audio/wdyn")) do
+        table.insert(variants, "resources/audio/wdyn/" .. name)
     end
 
     -- Pick a random variant and play it

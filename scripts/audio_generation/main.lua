@@ -8,23 +8,14 @@
 
 local TEXT        = "What did you notice?"   -- The phrase to speak
 local FILE_PREFIX = "what_noticed"           -- Output files: {prefix}_1.mp3, {prefix}_2.mp3, ...
-local VARIANTS    = 3                        -- Number of audio variants to generate
+local VARIANTS    = 10                        -- Number of audio variants to generate
 local SPEED       = 0.8                      -- Speech speed (0.7 = slower, 1.0 = normal, 1.2 = faster)
 
 -- ============================================================
 
 function love.load()
-    -- Resolve project root
-    local handle = io.popen("pwd")
-    local cwd = handle:read("*l")
-    handle:close()
-    local source = love.filesystem.getSource()
-    local projectRoot
-    if source:sub(1, 1) == "/" then
-        projectRoot = source:match("^(.+)/[^/]+/[^/]+$")
-    else
-        projectRoot = cwd
-    end
+    -- Project root = the directory love was launched from
+    local projectRoot = love.filesystem.getWorkingDirectory()
 
     -- Load native HTTPS module
     package.cpath = projectRoot .. "/lib/?.so;"
