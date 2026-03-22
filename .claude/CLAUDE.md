@@ -22,6 +22,8 @@ Available library IDs:
 - LOVE2D wiki: `/websites/love2d_wiki`
 - ElevenLabs API: `/websites/elevenlabs_io`
 - lua-http (HTTP requests): `/daurnimator/lua-http` (note: `lua-https` is not indexed in context7; use this as the closest alternative)
+- whisper.cpp: `/ggml-org/whisper.cpp`
+- Official OpenAI whisper: `/openai/whisper`
 
 ## Screen Flow
 
