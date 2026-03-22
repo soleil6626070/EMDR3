@@ -10,6 +10,7 @@ local screens = {
     menu        = require("screens.menu"),
     oscillating = require("screens.oscillating"),
     noticed     = require("screens.noticed"),
+    notice_that = require("screens.notice_that"),
 }
 
 local currentScreen = "menu"

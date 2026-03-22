@@ -96,6 +96,7 @@ function menu.keypressed(k)
         if selected > #options then selected = 1 end
     elseif k == "return" or k == "kpenter" then
         if selected == 1 then
+            require("modules.session").start(require("config").cycles)
             switchScreen("oscillating")
         elseif selected == 2 then
             love.event.quit()

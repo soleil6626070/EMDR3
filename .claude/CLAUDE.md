@@ -98,3 +98,6 @@ graph TD
 ## Potential Optimisations
 
 - **`noticed.lua` wdyn directory scan:** Currently rescans `resources/audio/wdyn/` on every `noticed.load()` call (~60 times per session). Cost is negligible on SSD with ≤10 files (~3ms/session total). Cache the file list at startup if: files exceed ~30–35, cycles exceed ~200, or running on a spinning HDD (threshold drops to ~2 files at ~1ms/scan).
+
+## Potential Problems
+- Audio files are not generated if they are missing on startup.

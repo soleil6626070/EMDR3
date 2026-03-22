@@ -1,20 +1,24 @@
+local config = require("config")
+local session = require("modules.session")
+
 local oscillating = {}
 
 local RADIUS = 24
-local SPEED_HZ = 1.0   -- full sweeps per second (one left→right = 1 sweep)
 local MARGIN = RADIUS + 40
-local DURATION = 5  -- seconds before auto-advancing (short for testing)
 
 local x, direction, speed
-local elapsed
+local oscillationCount
+local hintFont
 
 function oscillating.load()
     local W = love.graphics.getWidth()
     x = W / 2
     direction = 1
-    elapsed = 0
-    -- speed in pixels per second: full width travel in (1/SPEED_HZ) seconds
-    speed = (W - MARGIN * 2) * SPEED_HZ * 2
+    oscillationCount = 0
+    -- speed in pixels per second: full width travel in (1/freq) seconds
+    speed = (W - MARGIN * 2) * config.oscillation_frequency * 2
+
+    hintFont = love.graphics.newFont(14)
 end
 
 function oscillating.update(dt)
@@ -27,10 +31,11 @@ function oscillating.update(dt)
     elseif x <= MARGIN then
         x = MARGIN
         direction = 1
+        -- One full L→R→L oscillation completes on left-wall bounce
+        oscillationCount = oscillationCount + 1
     end
 
-    elapsed = elapsed + dt
-    if elapsed >= DURATION then
+    if oscillationCount >= config.oscillations then
         switchScreen("noticed")
     end
 end
@@ -48,7 +53,6 @@ function oscillating.draw()
     love.graphics.circle("fill", x, cy, RADIUS)
 
     -- Escape hint
-    local hintFont = love.graphics.newFont(14)
     love.graphics.setFont(hintFont)
     love.graphics.setColor(0.3, 0.3, 0.4)
     love.graphics.print("Escape — return to menu", 20, H - 36)
@@ -56,6 +60,7 @@ end
 
 function oscillating.keypressed(k)
     if k == "escape" then
+        session.reset()
         switchScreen("menu")
     end
 end

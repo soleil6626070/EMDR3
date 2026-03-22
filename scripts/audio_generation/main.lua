@@ -6,10 +6,11 @@
 -- CONFIGURE WHAT TO GENERATE HERE
 -- ============================================================
 
-local TEXT        = "What did you notice?"   -- The phrase to speak
-local FILE_PREFIX = "what_noticed"           -- Output files: {prefix}_1.mp3, {prefix}_2.mp3, ...
-local VARIANTS    = 10                        -- Number of audio variants to generate
-local SPEED       = 0.8                      -- Speech speed (0.7 = slower, 1.0 = normal, 1.2 = faster)
+local TEXT        = "Notice that."       -- The phrase to speak
+local FILE_PREFIX = "notice_that"        -- Output files: {prefix}_1.mp3, {prefix}_2.mp3, ...
+local VARIANTS    = 10                   -- Number of audio variants to generate
+local SPEED       = 0.8                  -- Speech speed (0.7 = slower, 1.0 = normal, 1.2 = faster)
+local SUBFOLDER   = "notice_that"        -- Output subfolder under resources/audio/
 
 -- ============================================================
 
@@ -53,19 +54,21 @@ function love.load()
     local base_url = "https://api.elevenlabs.io/v1"
 
     -- Ensure output directory exists
-    local audioDir = projectRoot .. "/resources/audio"
-    os.execute('mkdir -p "' .. audioDir .. '"')
+    local outDir = projectRoot .. "/resources/audio/" .. SUBFOLDER
+    os.execute('mkdir -p "' .. outDir .. '"')
 
-    -- Generate variants
+    -- Build request body
     local escaped_text = TEXT:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r')
     local body = string.format(
         '{"text":"%s","model_id":"%s","voice_settings":{"stability":0.5,"similarity_boost":0.75,"speed":%.1f}}',
         escaped_text, model_id, SPEED
     )
 
+    print(string.format("Generating \"%s\" (%d variants) → %s/", TEXT, VARIANTS, SUBFOLDER))
+
     for n = 1, VARIANTS do
         local filename = FILE_PREFIX .. "_" .. n .. ".mp3"
-        local outPath = audioDir .. "/" .. filename
+        local outPath = outDir .. "/" .. filename
 
         print(string.format("[%d/%d] Generating %s...", n, VARIANTS, filename))
 
