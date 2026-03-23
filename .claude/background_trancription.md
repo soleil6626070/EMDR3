@@ -38,7 +38,7 @@ Considerations:
 The transcription worker should continue to work under these varying circumstances.
 
 We will need to make some changes to the way the program handles sessions also to ensure good crash/error/early exit handling.
-Keeping it simple is better, lets not create sphaggetti code. 
+Keeping it simple is better, we need a simple transcription worker that runs in the background without interfereing with the user's sessions, that transcribes responses and saves them in a linked list for data analysis whilst handling early session termination.
 
 Suggestions:
 I suggest a parameter 1/0, eg: Session_ongoing=1 or 0 and changing it when the session starts and when the final cycle completes. That way in the event of an early exit, when the program is started again and processing is selected, we can quickly ask resume session? y/n to know if we want to append to the previous linked list or start a new one.
