@@ -22,7 +22,7 @@ function session.isLastCycle()
 end
 
 function session.getResponseFilename()
-    return string.format("resources/audio/user_responses/response_%s_cycle_%d.wav",
+    return string.format("resources/audio/transcription_queue/response_%s_cycle_%d.wav",
         session.startTimestamp, session.currentCycle)
 end
 

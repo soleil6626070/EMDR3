@@ -57,7 +57,7 @@ function noticed._stopAndSave()
         recordingData = mic:stop()
         if recordingData and recordingData:getSampleCount() > 0 then
             local projectRoot = love.filesystem.getSource()
-            local outDir = projectRoot .. "/resources/audio/user_responses"
+            local outDir = projectRoot .. "/resources/audio/transcription_queue"
             os.execute('mkdir -p "' .. outDir .. '"')
 
             local outPath = projectRoot .. "/" .. session.getResponseFilename()
