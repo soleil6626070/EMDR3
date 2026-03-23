@@ -1,3 +1,5 @@
+local transcription = require("modules.transcription")
+
 local menu = {}
 
 local options = { "Start Session", "Quit" }
@@ -77,6 +79,17 @@ function menu.draw()
             love.graphics.setColor(0.65, 0.75, 0.90)
             love.graphics.print(option, x, y)
         end
+    end
+
+    -- Transcription progress indicator
+    if not transcription.isIdle() then
+        love.graphics.setFont(fontHint)
+        local done = transcription.getCompletedCount()
+        local total = done + transcription.getPendingCount()
+        local statusText = string.format("Transcribing responses... (%d/%d)", done, total)
+        local statusW = fontHint:getWidth(statusText)
+        love.graphics.setColor(0.9, 0.8, 0.3)
+        love.graphics.print(statusText, (W - statusW) / 2, H - 64)
     end
 
     -- Controls hint

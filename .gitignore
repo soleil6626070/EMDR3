@@ -6,3 +6,10 @@ lib/*.dll
 
 # Old program
 archive/
+
+# Whisper binary and model
+bin/
+models/
+
+# Session output data
+resources/output_data/

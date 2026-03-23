@@ -1,5 +1,6 @@
-local session = require("modules.session")
-local wav = require("modules.wav")
+local session       = require("modules.session")
+local wav           = require("modules.wav")
+local transcription = require("modules.transcription")
 
 local noticed = {}
 
@@ -65,6 +66,8 @@ function noticed._stopAndSave()
             if f then
                 f:write(encoded)
                 f:close()
+                transcription.setSessionTimestamp(session.startTimestamp)
+                transcription.enqueue(outPath, session.currentCycle)
             end
         end
     end

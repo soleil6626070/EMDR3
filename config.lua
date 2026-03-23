@@ -26,9 +26,13 @@ config.ELEVENLABS_MODEL_ID  = "eleven_multilingual_v2"
 -- Speech speed settings (0.7–1.2, 1.0 = normal)
 config.NOTICE_SPEECH_SPEED  = 0.9   -- "What did you notice?" (slightly slower for therapeutic context)
 
+-- Whisper (local transcription)
+config.WHISPER_BIN   = "bin/whisper-cli"
+config.WHISPER_MODEL = "models/ggml-small.en.bin"
+
 -- Session / processing loop
-config.cycles                = 6    -- processing cycles per session
-config.oscillations          = 3   -- full sweeps per cycle
+config.cycles                = 3    -- processing cycles per session
+config.oscillations          = 2   -- full sweeps per cycle
 config.oscillation_frequency = 1.0  -- Hz (sweeps per second)
 
 return config

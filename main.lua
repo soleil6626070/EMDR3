@@ -3,8 +3,9 @@ package.cpath = love.filesystem.getSource() .. "/lib/?.so;"
             .. love.filesystem.getSource() .. "/lib/?.dll;"
             .. package.cpath
 
-local config = require("config")
-local tts    = require("modules.tts")
+local config        = require("config")
+local tts           = require("modules.tts")
+local transcription = require("modules.transcription")
 
 local screens = {
     menu        = require("screens.menu"),
@@ -24,11 +25,13 @@ end
 
 function love.load()
     tts.init(config)
+    transcription.init(config)
     screens[currentScreen].load()
 end
 
 function love.update(dt)
     tts.update()
+    transcription.update()
     screens[currentScreen].update(dt)
 end
 
@@ -42,4 +45,5 @@ end
 
 function love.quit()
     tts.shutdown()
+    transcription.shutdown()
 end
