@@ -31,7 +31,7 @@ config.WHISPER_BIN   = "bin/whisper-cli"
 config.WHISPER_MODEL = "models/ggml-small.en.bin"
 
 -- Session / processing loop
-config.cycles                = 3    -- processing cycles per session
+config.cycles                = 6    -- processing cycles per session
 config.oscillations          = 2   -- full sweeps per cycle
 config.oscillation_frequency = 1.0  -- Hz (sweeps per second)
 

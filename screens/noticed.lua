@@ -66,8 +66,8 @@ function noticed._stopAndSave()
             if f then
                 f:write(encoded)
                 f:close()
-                transcription.setSessionTimestamp(session.startTimestamp)
-                transcription.enqueue(outPath, session.currentCycle)
+                transcription.enqueue(outPath, session.currentCycle, session.startTimestamp)
+                session.writeOngoing()
             end
         end
     end
@@ -75,6 +75,7 @@ end
 
 function noticed._advance()
     if session.isLastCycle() then
+        session.clearOngoing()
         session.reset()
         switchScreen("menu")
     else

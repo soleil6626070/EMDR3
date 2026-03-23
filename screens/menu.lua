@@ -1,4 +1,6 @@
 local transcription = require("modules.transcription")
+local session       = require("modules.session")
+local config        = require("config")
 
 local menu = {}
 
@@ -10,6 +12,11 @@ local time = 0
 local spinTime = 0
 local fontTitle, fontSub, fontMenu, fontHint
 
+-- Resume prompt state
+local showResumePrompt = false
+local resumeTimestamp = nil
+local resumeCycle = nil
+
 -- Calm blue/teal palette for the background
 local colour1 = {0.15, 0.35, 0.55, 1.0}
 local colour2 = {0.05, 0.20, 0.40, 1.0}
@@ -19,6 +26,9 @@ function menu.load()
     selected = 1
     time = 0
     spinTime = 0
+    showResumePrompt = false
+    resumeTimestamp = nil
+    resumeCycle = nil
     bgShader = love.graphics.newShader("resources/shaders/background.fs")
     fontTitle = love.graphics.newFont(64)
     fontSub   = love.graphics.newFont(18)
@@ -28,7 +38,7 @@ end
 
 -- Dictates menu background movement speed
 function menu.update(dt)
-    time = time + dt 
+    time = time + dt
     spinTime = spinTime + dt * 0.1
 end
 
@@ -98,9 +108,61 @@ function menu.draw()
     local hintText = "↑↓ Navigate   Enter Select"
     local hintW = fontHint:getWidth(hintText)
     love.graphics.print(hintText, (W - hintW) / 2, H - 40)
+
+    -- Resume prompt overlay
+    if showResumePrompt then
+        -- Semi-transparent background
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", 0, 0, W, H)
+
+        -- Centered prompt box
+        local boxW, boxH = 500, 160
+        local boxX = (W - boxW) / 2
+        local boxY = (H - boxH) / 2
+
+        love.graphics.setColor(0.12, 0.14, 0.18)
+        love.graphics.rectangle("fill", boxX, boxY, boxW, boxH, 12, 12)
+        love.graphics.setColor(0.3, 0.5, 0.7)
+        love.graphics.rectangle("line", boxX, boxY, boxW, boxH, 12, 12)
+
+        love.graphics.setFont(fontMenu)
+        love.graphics.setColor(1, 1, 1)
+        local promptText = "Resume previous session?"
+        local promptW = fontMenu:getWidth(promptText)
+        love.graphics.print(promptText, (W - promptW) / 2, boxY + 30)
+
+        love.graphics.setFont(fontSub)
+        love.graphics.setColor(0.7, 0.8, 0.9)
+        local detailText = string.format("Session %s — cycle %d completed",
+            resumeTimestamp, resumeCycle)
+        local detailW = fontSub:getWidth(detailText)
+        love.graphics.print(detailText, (W - detailW) / 2, boxY + 75)
+
+        love.graphics.setColor(0.55, 0.65, 0.80)
+        local keyText = "Y — Resume     N — New session"
+        local keyW = fontSub:getWidth(keyText)
+        love.graphics.print(keyText, (W - keyW) / 2, boxY + 110)
+    end
 end
 
 function menu.keypressed(k)
+    -- Handle resume prompt keys first
+    if showResumePrompt then
+        if k == "y" then
+            showResumePrompt = false
+            session.resume(config.cycles, resumeTimestamp, resumeCycle)
+            switchScreen("oscillating")
+        elseif k == "n" then
+            showResumePrompt = false
+            session.clearOngoing()
+            session.start(config.cycles)
+            switchScreen("oscillating")
+        elseif k == "escape" then
+            showResumePrompt = false
+        end
+        return
+    end
+
     if k == "up" then
         selected = selected - 1
         if selected < 1 then selected = #options end
@@ -109,8 +171,16 @@ function menu.keypressed(k)
         if selected > #options then selected = 1 end
     elseif k == "return" or k == "kpenter" then
         if selected == 1 then
-            require("modules.session").start(require("config").cycles)
-            switchScreen("oscillating")
+            -- Check for an ongoing session before starting
+            local ts, cycle = session.getOngoing()
+            if ts then
+                resumeTimestamp = ts
+                resumeCycle = cycle
+                showResumePrompt = true
+            else
+                session.start(config.cycles)
+                switchScreen("oscillating")
+            end
         elseif selected == 2 then
             love.event.quit()
         end

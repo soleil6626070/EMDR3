@@ -12,4 +12,4 @@ bin/
 models/
 
 # Session output data
-resources/output_data/
+output_data/
