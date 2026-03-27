@@ -32,12 +32,12 @@ config.WHISPER_MODEL = "models/ggml-small.en.bin"
 
 -- Session / processing loop
 config.cycles                = 6    -- processing cycles per session
-config.oscillations          = 3   -- full sweeps per cycle
+config.oscillations          = 6   -- full sweeps per cycle
 config.oscillation_frequency = 1.0  -- Hz (sweeps per second)
 
--- Slowdown: last N oscillations decelerate via damped sine wave
-config.slowdown_oscillations = 2     -- last N oscillations decelerate
-config.slowdown_damping      = 5.0   -- damping factor (higher = faster decay)
+-- Slowdown: critically damped spring clamped to center (no overshoot)
+config.slowdown_oscillations = 1     -- last N oscillations decelerate
+config.slowdown_stiffness    = 2.2   -- spring natural frequency (higher = faster return to center)
 
 -- Breathing animation after oscillation stops at center
 config.breathe_in_duration   = 4.0   -- seconds for inhale (circle grows)

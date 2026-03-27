@@ -12,7 +12,7 @@ local x, direction, speed
 -- Oscillation tracking
 local oscillationCount
 
--- Phase state machine: "normal" -> "slowing" -> "centering" -> "breathe_in" -> "breathe_out"
+-- Phase state machine: "normal" -> "slowing" -> "breathe_in" -> "breathe_out"
 local phase
 local phaseTimer
 
@@ -22,8 +22,11 @@ local currentRadius
 -- Saved on load for reference during slowing phase
 local baseSpeed
 
--- Phase offset for damped sine continuity at normal->slowing transition
-local phi0
+-- Critically damped spring coefficients (computed once at normal->slowing transition)
+local springA, springB, springW
+
+-- Which side of center the dot starts from (1 = right, -1 = left), used to prevent overshoot
+local springSign
 
 -- Font for escape hint
 local hintFont
@@ -42,7 +45,10 @@ function oscillating.load()
     phase = "normal"
     phaseTimer = 0
     currentRadius = RADIUS
-    phi0 = 0
+    springA = 0
+    springB = 0
+    springW = 0
+    springSign = 1
 
     hintFont = love.graphics.newFont(14)
 end
@@ -74,44 +80,37 @@ function oscillating.update(dt)
             phase = "slowing"
             phaseTimer = 0
 
-            -- Compute phi0 so damped sine matches current position and direction.
-            -- sin(phi0) = normalised offset from center, quadrant chosen by direction.
-            local A0 = (W - MARGIN * 2) / 2
-            local offset = math.max(-1, math.min(1, (x - center) / A0))
-            phi0 = math.asin(offset)
-            if direction < 0 then
-                phi0 = math.pi - phi0
-            end
+            -- Critically damped spring: x(t) = center + (A + B*t) * e^(-w*t)
+            -- A = initial offset from center
+            -- B = initial velocity + w*A (ensures smooth velocity continuity)
+            -- w = spring natural frequency (config.slowdown_stiffness)
+            springW = config.slowdown_stiffness
+            springA = x - center
+            local v0 = direction * speed
+            springB = v0 + springW * springA
+
+            -- Remember which side of center we started on to prevent overshoot
+            if x >= center then springSign = 1 else springSign = -1 end
         end
 
-    -- Phase: Slowing — damped sine wave, like a pendulum losing energy
+    -- Phase: Slowing — critically damped spring, clamped so the dot never overshoots center
     elseif phase == "slowing" then
         phaseTimer = phaseTimer + dt
 
-        -- Damped sine parameters
-        local A0    = (W - MARGIN * 2) / 2
-        local omega = 2 * math.pi * config.oscillation_frequency
-        local T     = config.slowdown_oscillations / config.oscillation_frequency
-        local decay = config.slowdown_damping / T
+        -- Critically damped spring position
+        local decay = math.exp(-springW * phaseTimer)
+        local offset = (springA + springB * phaseTimer) * decay
 
-        -- Exponentially decaying amplitude
-        local amp = A0 * math.exp(-decay * phaseTimer)
-
-        -- Parametric position: oscillates with shrinking amplitude
-        x = center + amp * math.sin(omega * phaseTimer + phi0)
-
-        -- Transition to centering when amplitude is negligible
-        if amp < 1.5 then
-            phase = "centering"
-            phaseTimer = 0
+        -- Clamp: if the offset would cross center, pin it to center
+        -- springSign is positive if we started right of center, negative if left
+        if springSign * offset < 0 then
+            offset = 0
         end
 
-    -- Phase: Centering — exponential ease to exact screen center
-    elseif phase == "centering" then
-        x = x + (center - x) * math.min(1, 5 * dt)
+        x = center + offset
 
-        -- Snap to center once close enough
-        if math.abs(x - center) < 0.5 then
+        -- Transition to breathing once at center
+        if offset == 0 then
             x = center
             phase = "breathe_in"
             phaseTimer = 0
