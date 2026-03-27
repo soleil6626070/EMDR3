@@ -4,7 +4,7 @@ local config        = require("config")
 
 local menu = {}
 
-local options = { "Start Session", "Quit" }
+local options = { "Target Identification", "Start Session", "Quit" }
 local selected = 1
 
 local bgShader
@@ -171,6 +171,8 @@ function menu.keypressed(k)
         if selected > #options then selected = 1 end
     elseif k == "return" or k == "kpenter" then
         if selected == 1 then
+            switchScreen("target_identification")
+        elseif selected == 2 then
             -- Check for an ongoing session before starting
             local ts, cycle = session.getOngoing()
             if ts then
@@ -181,7 +183,7 @@ function menu.keypressed(k)
                 session.start(config.cycles)
                 switchScreen("oscillating")
             end
-        elseif selected == 2 then
+        elseif selected == 3 then
             love.event.quit()
         end
     elseif k == "escape" or k == "q" then
