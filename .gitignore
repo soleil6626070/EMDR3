@@ -6,6 +6,7 @@ lib/*.dll
 
 # Old program
 archive/
+testing/
 
 # Whisper binary and model
 bin/
