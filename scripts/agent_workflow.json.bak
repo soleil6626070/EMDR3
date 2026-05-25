@@ -134,7 +134,7 @@
   },
   "metadata": {
     "created_at_unix_secs": 1779664916,
-    "updated_at_unix_secs": 1779668579
+    "updated_at_unix_secs": 1779670611
   },
   "platform_settings": {
     "evaluation": {
@@ -582,8 +582,8 @@
       "start_node": {
         "type": "start",
         "position": {
-          "x": -525.0,
-          "y": -267.0
+          "x": -633.8908322943976,
+          "y": -776.0952169093989
         },
         "edge_order": [
           "start_to_intro"
@@ -608,8 +608,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": -386.0,
-          "y": -444.0
+          "x": -277.5918953571314,
+          "y": -775.2663860017256
         },
         "edge_order": [
           "intro_to_event"
@@ -636,8 +636,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": -101.0,
-          "y": -370.0
+          "x": -277.70039847559997,
+          "y": -603.3031441445781
         },
         "edge_order": [
           "event_to_image"
@@ -664,8 +664,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": 475.0,
-          "y": 82.0
+          "x": -278.94929106094384,
+          "y": -415.3139944564251
         },
         "edge_order": [
           "image_to_neg_cog"
@@ -692,8 +692,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": 50.0,
-          "y": 306.0
+          "x": -277.1102744285576,
+          "y": -224.55690852436794
         },
         "edge_order": [
           "neg_cog_to_pos_cog"
@@ -720,8 +720,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": -279.0,
-          "y": -219.0
+          "x": -281.65943312543544,
+          "y": -40.81798059582631
         },
         "edge_order": [
           "pos_cog_to_voc"
@@ -748,8 +748,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": -289.0,
-          "y": 286.0
+          "x": -277.0325509355406,
+          "y": 131.75287872474513
         },
         "edge_order": [
           "voc_to_emotion"
@@ -776,8 +776,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": -379.0,
-          "y": -16.0
+          "x": -275.2821081080182,
+          "y": 340.36403880834735
         },
         "edge_order": [
           "emotion_to_sud"
@@ -804,8 +804,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": 219.0,
-          "y": -322.0
+          "x": -274.324844768272,
+          "y": 540.9860492037965
         },
         "edge_order": [
           "sud_to_body"
@@ -832,8 +832,8 @@
         "additional_tool_ids": [],
         "type": "override_agent",
         "position": {
-          "x": 159.0,
-          "y": 354.0
+          "x": -275.8173160086925,
+          "y": 735.6286534999839
         },
         "edge_order": [
           "body_to_end"
@@ -844,8 +844,8 @@
       "end_node": {
         "type": "end",
         "position": {
-          "x": -35.0,
-          "y": 601.0
+          "x": 391.8390166323862,
+          "y": 733.9716562717714
         },
         "edge_order": []
       }
@@ -864,7 +864,7 @@
     "target-identification",
     "phase-3"
   ],
-  "version_id": "agtvrsn_5101kse86xpmfkxvcxwmh9gz2k60",
+  "version_id": "agtvrsn_8101ksea4xw6ebnveshrtw1p0ahk",
   "branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "main_branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "coaching_settings": null,
