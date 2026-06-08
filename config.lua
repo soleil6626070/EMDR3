@@ -18,13 +18,13 @@ end
 config.OPENAI_API_KEY     = config.OPEN_AI_API_EMDR_KEY
 config.ELEVENLABS_API_KEY = config.ELEVENLABS_API_EMDR_KEY
 
--- ElevenLabs Settings
-config.ELEVENLABS_VOICE_ID  = "EXAVITQu4vr4xnSDxMaL"  -- Sarah voice (default premade, free-plan compatible)
+-- TTS Settings (Not Target Image Identification Agent Settings)
+config.ELEVENLABS_VOICE_ID  = "eR40ATw9ArzDf9h3v7t7"  -- Addison 2.0
 config.ELEVENLABS_BASE_URL  = "https://api.elevenlabs.io/v1"
 config.ELEVENLABS_MODEL_ID  = "eleven_multilingual_v2"
 
 -- Speech speed settings (0.7–1.2, 1.0 = normal)
-config.NOTICE_SPEECH_SPEED  = 0.9   -- "What did you notice?" (slightly slower for therapeutic context)
+config.NOTICE_SPEECH_SPEED  = 0.9   -- "What did you notice?"
 
 -- ElevenLabs Conversational AI Agent
 config.ELEVENLABS_AGENT_ID  = config.ELEVENLABS_AGENT_ID_EMDR or ""

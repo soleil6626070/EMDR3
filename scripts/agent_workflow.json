@@ -4,7 +4,7 @@
   "conversation_config": {
     "asr": {
       "quality": "high",
-      "provider": "elevenlabs",
+      "provider": "scribe_realtime",
       "user_input_audio_format": "pcm_16000",
       "keywords": []
     },
@@ -15,26 +15,34 @@
       "mode": "turn",
       "turn_eagerness": "normal",
       "spelling_patience": "auto",
-      "speculative_turn": false,
+      "speculative_turn": true,
       "retranscribe_on_turn_timeout": false,
       "turn_model": "turn_v2",
       "interruption_ignore_terms": [],
       "soft_timeout_config": {
         "timeout_seconds": -1.0,
         "message": "Hhmmmm...yeah.",
-        "use_llm_generated_message": false
+        "additional_soft_timeout_messages": [],
+        "use_llm_generated_message": false,
+        "max_soft_timeouts_per_generation": 1,
+        "llm_generated_message_prompt_override": null
       }
     },
     "tts": {
       "model_id": "eleven_turbo_v2",
-      "voice_id": "EXAVITQu4vr4xnSDxMaL",
+      "voice_id": "eR40ATw9ArzDf9h3v7t7",
       "supported_voices": [],
       "expressive_mode": false,
-      "suggested_audio_tags": [],
+      "suggested_audio_tags": [
+        {
+          "tag": "Patiently",
+          "description": "Throughout"
+        }
+      ],
       "agent_output_audio_format": "pcm_16000",
       "optimize_streaming_latency": 3,
       "stability": 0.6,
-      "speed": 0.95,
+      "speed": 0.9,
       "similarity_boost": 0.8,
       "text_normalisation_type": "system_prompt",
       "pronunciation_dictionary_locators": []
@@ -134,7 +142,7 @@
   },
   "metadata": {
     "created_at_unix_secs": 1779664916,
-    "updated_at_unix_secs": 1779725295
+    "updated_at_unix_secs": 1780952478
   },
   "platform_settings": {
     "evaluation": {
@@ -269,6 +277,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "image": {
@@ -278,6 +287,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "negative_cognition": {
@@ -287,6 +297,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "positive_cognition": {
@@ -296,6 +307,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "voc": {
@@ -305,6 +317,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "emotions": {
@@ -314,6 +327,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "sud": {
@@ -323,6 +337,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "body_location": {
@@ -332,6 +347,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       }
     },
@@ -617,6 +633,9 @@
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -640,11 +659,14 @@
       "event_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -669,11 +691,14 @@
       "image_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -697,11 +722,14 @@
       "neg_cog_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -725,11 +753,14 @@
       "pos_cog_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -753,11 +784,14 @@
       "voc_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -781,11 +815,14 @@
       "emotion_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -809,11 +846,14 @@
       "sud_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -837,11 +877,14 @@
       "body_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -873,13 +916,16 @@
       "node_01ksfr00creh0v7kvpxfrrk37t": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": null,
             "retranscribe_on_turn_timeout": null
           },
           "tts": {
             "voice_id": null
+          },
+          "conversation": {
+            "client_events": null
           },
           "agent": {
             "prompt": {
@@ -911,21 +957,18 @@
     "creator_name": "aidansoleil96@gmail.com",
     "creator_email": "aidansoleil96@gmail.com",
     "role": "admin",
-    "anonymous_access_level_override": null
+    "anonymous_access_level_override": null,
+    "access_source": "creator"
   },
   "tags": [
     "emdr",
     "target-identification",
     "phase-3"
   ],
-  "version_id": "agtvrsn_6201ksfy9qrcewt8ytvgctx31av7",
+  "version_id": "agtvrsn_3001ktmgmd9yefqvhxxyfmgqefja",
   "branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "main_branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "coaching_settings": null,
   "procedures": {},
-  "procedures_enabled": false,
-  "procedure_settings": {
-    "compiler_mode": "skills"
-  },
   "trust_context": "unknown"
 }

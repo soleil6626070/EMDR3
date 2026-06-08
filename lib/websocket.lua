@@ -72,22 +72,29 @@ local function apply_mask(data, mask)
 end
 
 --- Read exactly n bytes from socket.
-local function read_bytes(sock, n, timeout)
-    local data = ""
+-- Returns the bytes read so far alongside the status so callers can resume a
+-- partial frame rather than desyncing.
+-- @return data            on success (n bytes)
+-- @return nil, status, partial  on timeout/would-block (status "timeout"),
+--                               or on a hard error (status = the socket error)
+local function read_bytes(sock, n, timeout, prefix)
+    local data = prefix or ""
     local deadline = socket.gettime() + (timeout or 10)
     while #data < n do
         local remaining = deadline - socket.gettime()
-        if remaining <= 0 then return nil, "timeout" end
+        if remaining <= 0 then return nil, "timeout", data end
         sock:settimeout(remaining)
         local chunk, err, partial = sock:receive(n - #data)
         if chunk then
             data = data .. chunk
         elseif partial and #partial > 0 then
             data = data .. partial
-        elseif err == "timeout" then
-            -- continue trying until deadline
+        -- LuaSec TLS sockets report "wantread"/"wantwrite" instead of "timeout"
+        -- when no data is ready yet; these are non-fatal "try again" statuses.
+        elseif err == "timeout" or err == "wantread" or err == "wantwrite" then
+            -- keep trying until the deadline
         else
-            return nil, err
+            return nil, err, data
         end
     end
     return data
@@ -249,52 +256,86 @@ function websocket:send(data, opcode)
 end
 
 --- Receive a WebSocket frame.
+-- Resumable across calls: with a short timeout (e.g. non-blocking polling), a
+-- frame that arrives in pieces is buffered on self._rx and continued on the next
+-- call, so a mid-frame timeout never desyncs the stream.
 -- @param timeout  Optional timeout in seconds (default: self.timeout)
--- @return data, opcode_name  or  nil, error_string
---   opcode_name is "text", "binary", "close", "ping", or "pong"
+-- @return data, opcode_name  or  nil, error_string ("timeout" when no full frame
+--   arrived in time). opcode_name is "text", "binary", "close", "ping", or "pong".
 function websocket:receive(timeout)
     if self.closed then return nil, "closed" end
     timeout = timeout or self.timeout
 
-    -- Read first 2 bytes of frame header
-    local header, err = read_bytes(self.sock, 2, timeout)
-    if not header then return nil, err end
-
-    local b1, b2 = header:byte(1, 2)
-    local opcode = bit.band(b1, 0x0F)
-    local masked = bit.band(b2, 0x80) ~= 0
-    local payload_len = bit.band(b2, 0x7F)
-
-    -- Extended payload length
-    if payload_len == 126 then
-        local ext, ext_err = read_bytes(self.sock, 2, timeout)
-        if not ext then return nil, ext_err end
-        payload_len = ext:byte(1) * 256 + ext:byte(2)
-    elseif payload_len == 127 then
-        local ext, ext_err = read_bytes(self.sock, 8, timeout)
-        if not ext then return nil, ext_err end
-        payload_len = 0
-        for i = 1, 8 do
-            payload_len = payload_len * 256 + ext:byte(i)
-        end
+    -- Resume any partially-read frame from a previous call.
+    local rx = self._rx
+    if not rx then
+        rx = { phase = "header", buf = "" }
+        self._rx = rx
     end
 
-    -- Masking key (server frames are typically unmasked)
-    local mask_key
-    if masked then
-        mask_key, err = read_bytes(self.sock, 4, timeout)
-        if not mask_key then return nil, err end
+    -- Read `need` bytes for the current phase, carrying partial progress in rx.buf.
+    -- Returns the bytes on success; on timeout returns nil and leaves rx.buf so the
+    -- next call resumes. On hard error returns nil + the error and clears rx.
+    local function step(need)
+        local data, err, partial = read_bytes(self.sock, need, timeout, rx.buf)
+        if data then
+            rx.buf = ""
+            return data
+        end
+        rx.buf = partial or rx.buf  -- preserve progress across calls
+        if err ~= "timeout" then self._rx = nil end  -- hard error: reset
+        return nil, err
+    end
+
+    if rx.phase == "header" then
+        local header, err = step(2)
+        if not header then return nil, err end
+        rx.b1 = header:byte(1)
+        local b2 = header:byte(2)
+        rx.opcode = bit.band(rx.b1, 0x0F)
+        rx.masked = bit.band(b2, 0x80) ~= 0
+        rx.payload_len = bit.band(b2, 0x7F)
+        rx.phase = "extlen"
+    end
+
+    if rx.phase == "extlen" then
+        if rx.payload_len == 126 then
+            local ext, err = step(2)
+            if not ext then return nil, err end
+            rx.payload_len = ext:byte(1) * 256 + ext:byte(2)
+        elseif rx.payload_len == 127 then
+            local ext, err = step(8)
+            if not ext then return nil, err end
+            rx.payload_len = 0
+            for i = 1, 8 do
+                rx.payload_len = rx.payload_len * 256 + ext:byte(i)
+            end
+        end
+        rx.phase = "mask"
+    end
+
+    if rx.phase == "mask" then
+        if rx.masked then
+            local mk, err = step(4)
+            if not mk then return nil, err end
+            rx.mask_key = mk
+        end
+        rx.phase = "payload"
     end
 
     -- Payload
     local data = ""
-    if payload_len > 0 then
-        data, err = read_bytes(self.sock, payload_len, timeout)
-        if not data then return nil, err end
-        if masked then
-            data = apply_mask(data, mask_key)
+    if rx.payload_len > 0 then
+        local p, err = step(rx.payload_len)
+        if not p then return nil, err end
+        data = p
+        if rx.masked then
+            data = apply_mask(data, rx.mask_key)
         end
     end
+
+    local opcode = rx.opcode
+    self._rx = nil  -- frame complete; ready for the next one
 
     -- Handle control frames
     if opcode == OPCODE_PING then

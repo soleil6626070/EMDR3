@@ -13,6 +13,11 @@ function love.conf(t)
     t.modules.mouse = true
     t.modules.timer = true
 
+    -- Required to request microphone permission / enable recording devices.
+    -- Without this, love.audio.getRecordingDevices() can return empty on Linux
+    -- (PipeWire/PulseAudio) and mic capture silently no-ops.
+    t.audio.mic = true
+
     t.modules.thread = true
 
     t.modules.joystick = false

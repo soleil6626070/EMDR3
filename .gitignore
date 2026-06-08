@@ -14,3 +14,7 @@ models/
 
 # Session output data
 output_data/
+
+# Scratchpad/TODO
+TODO.md 
+CONSIDERATIONS.md 

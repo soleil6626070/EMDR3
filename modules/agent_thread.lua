@@ -14,55 +14,7 @@ package.cpath = sourcePath .. "/lib/?.so;" .. sourcePath .. "/lib/?.dll;" .. pac
 package.path  = sourcePath .. "/lib/?.lua;" .. sourcePath .. "/lib/?/init.lua;" .. package.path
 
 local websocket = require("websocket")
-
-----------------------------------------------------------------------
--- Minimal JSON helpers (no external dependency)
-----------------------------------------------------------------------
-
---- Decode a JSON string into a Lua table (handles the subset ElevenLabs sends).
-local function json_decode(str)
-    if not str or str == "" then return nil end
-    -- Use load() with a safe environment to parse JSON-like structures.
-    -- JSON maps cleanly to Lua: {} -> table, [] -> table, null -> nil, true/false same.
-    local json_str = str
-    -- Replace JSON null/true/false
-    json_str = json_str:gsub('"([^"]-)":', function(k)
-        return '["' .. k .. '"]='
-    end)
-    json_str = json_str:gsub("%[", "{"):gsub("%]", "}")
-    json_str = json_str:gsub(":null", ":nil")
-
-    local fn, err = load("return " .. json_str)
-    if not fn then return nil, err end
-    -- Run in empty environment for safety
-    setfenv(fn, {})
-    local ok, result = pcall(fn)
-    if not ok then return nil, result end
-    return result
-end
-
---- Encode a simple Lua table to JSON (flat key-value, string/number/boolean values only).
-local function json_encode(tbl)
-    local parts = {}
-    for k, v in pairs(tbl) do
-        local key = '"' .. tostring(k) .. '"'
-        local val
-        if type(v) == "string" then
-            -- Escape special chars
-            val = '"' .. v:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r') .. '"'
-        elseif type(v) == "number" then
-            val = tostring(v)
-        elseif type(v) == "boolean" then
-            val = v and "true" or "false"
-        elseif v == nil then
-            val = "null"
-        else
-            val = '"' .. tostring(v) .. '"'
-        end
-        parts[#parts + 1] = key .. ":" .. val
-    end
-    return "{" .. table.concat(parts, ",") .. "}"
-end
+local json      = require("json")
 
 ----------------------------------------------------------------------
 -- Event helpers
@@ -120,8 +72,10 @@ if not init_data then
     return
 end
 
-local init_msg = json_decode(init_data)
-if not init_msg or init_msg.type ~= "conversation_initiation_metadata" then
+-- json.decode raises on malformed input, so wrap in pcall to fail gracefully.
+local ok_init, init_msg = pcall(json.decode, init_data)
+if not ok_init or type(init_msg) ~= "table"
+   or init_msg.type ~= "conversation_initiation_metadata" then
     pushError("Unexpected init message: " .. tostring(init_data):sub(1, 200))
     ws:close(1000)
     return
@@ -159,7 +113,7 @@ while running do
         local audioChunk = audioOutChannel:pop()
         if not audioChunk then break end
         local b64 = love.data.encode("string", "base64", audioChunk)
-        local msg = json_encode({ user_audio_chunk = b64 })
+        local msg = json.encode({ user_audio_chunk = b64 })
         local send_ok, send_err = ws:send(msg, "text")
         if not send_ok then
             pushError("Failed to send audio: " .. tostring(send_err))
@@ -174,8 +128,9 @@ while running do
     local data, opcode = ws:receive(0.05)
 
     if data and opcode == "text" then
-        local msg = json_decode(data)
-        if msg then
+        -- Skip any frame that fails to parse rather than crashing the worker.
+        local ok_msg, msg = pcall(json.decode, data)
+        if ok_msg and type(msg) == "table" then
             if msg.type == "user_transcript" then
                 local ev = msg.user_transcription_event or {}
                 pushEvent({ type = "user_transcript", text = ev.user_transcript or "" })
@@ -204,7 +159,7 @@ while running do
 
             elseif msg.type == "ping" then
                 local ev = msg.ping_event or {}
-                local pong = json_encode({ type = "pong", event_id = ev.event_id or 0 })
+                local pong = json.encode({ type = "pong", event_id = ev.event_id or 0 })
                 ws:send(pong, "text")
 
             elseif msg.type == "conversation_ended" or msg.type == "close" then

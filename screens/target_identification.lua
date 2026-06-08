@@ -12,7 +12,6 @@ local mic
 local elapsed = 0
 local audioSendTimer = 0
 local AUDIO_SEND_INTERVAL = 0.1  -- send mic chunks every 100ms
-local lastSamplePos = 0
 
 -- Transcript scroll
 local scrollOffset = 0
@@ -64,7 +63,6 @@ local function startMic()
         mic = devices[1]
         -- Large buffer, 16kHz mono 16-bit to match ElevenLabs expected input
         mic:start(16000 * 60, 16000, 16, 1)  -- ~60s buffer
-        lastSamplePos = 0
     else
         mic = nil
         print("[TID] No microphone found")
@@ -80,6 +78,9 @@ local function stopMic()
 end
 
 --- Read new mic samples and send to agent as raw PCM chunks.
+-- mic:getData() returns ONLY the samples recorded since the previous call and
+-- clears the device's ring buffer, so each call's SoundData is already the new
+-- audio — send the whole thing (no manual offset tracking).
 local function streamMicAudio()
     if not mic or not mic:isRecording() then return end
 
@@ -87,19 +88,13 @@ local function streamMicAudio()
     if not soundData then return end
 
     local sampleCount = soundData:getSampleCount()
-    if sampleCount <= lastSamplePos then return end
+    if sampleCount == 0 then return end
 
-    -- Extract new samples as raw 16-bit PCM bytes
-    local newSamples = sampleCount - lastSamplePos
+    -- Raw 16-bit mono PCM: 2 bytes per sample.
     local ffi = require("ffi")
     local ptr = soundData:getFFIPointer()
-    local byteOffset = lastSamplePos * 2  -- 16-bit = 2 bytes per sample
-    local byteLen = newSamples * 2
-
-    local pcmChunk = ffi.string(ffi.cast("char*", ptr) + byteOffset, byteLen)
+    local pcmChunk = ffi.string(ffi.cast("char*", ptr), sampleCount * 2)
     agent.sendAudio(pcmChunk)
-
-    lastSamplePos = sampleCount
 end
 
 function tid.load()

@@ -4,7 +4,7 @@
   "conversation_config": {
     "asr": {
       "quality": "high",
-      "provider": "elevenlabs",
+      "provider": "scribe_realtime",
       "user_input_audio_format": "pcm_16000",
       "keywords": []
     },
@@ -15,26 +15,34 @@
       "mode": "turn",
       "turn_eagerness": "normal",
       "spelling_patience": "auto",
-      "speculative_turn": false,
+      "speculative_turn": true,
       "retranscribe_on_turn_timeout": false,
       "turn_model": "turn_v2",
       "interruption_ignore_terms": [],
       "soft_timeout_config": {
         "timeout_seconds": -1.0,
         "message": "Hhmmmm...yeah.",
-        "use_llm_generated_message": false
+        "additional_soft_timeout_messages": [],
+        "use_llm_generated_message": false,
+        "max_soft_timeouts_per_generation": 1,
+        "llm_generated_message_prompt_override": null
       }
     },
     "tts": {
       "model_id": "eleven_turbo_v2",
-      "voice_id": "EXAVITQu4vr4xnSDxMaL",
+      "voice_id": "eR40ATw9ArzDf9h3v7t7",
       "supported_voices": [],
       "expressive_mode": false,
-      "suggested_audio_tags": [],
+      "suggested_audio_tags": [
+        {
+          "tag": "Patiently",
+          "description": "Throughout"
+        }
+      ],
       "agent_output_audio_format": "pcm_16000",
       "optimize_streaming_latency": 3,
       "stability": 0.6,
-      "speed": 0.95,
+      "speed": 0.9,
       "similarity_boost": 0.8,
       "text_normalisation_type": "system_prompt",
       "pronunciation_dictionary_locators": []
@@ -82,7 +90,7 @@
       "max_conversation_duration_message": "",
       "text_behavior_overrides": null,
       "prompt": {
-        "prompt": "You are a calm, warm, and experienced EMDR clinician guiding a client through the target-image identification process that preludes EMDR therapy. Your sole purpose is to help the client identify a single target memory and have them describe a freeze frame of their memory. You will then establish some baseline measures.\n\nCORE PRINCIPLES:\n- Speak conversationally, one short question at a time. Never monologue. Never list multiple questions.\n- Match the client's pace. If they need silence, be silent.\n- Do NOT pressure for graphic detail. EMDR does not require you to know what happened — only enough to set baselines.\n- Accept whatever the client offers. Validate briefly, then move on.\n- If the client becomes distressed or abreactive, slow down, validate, and gently continue — do not push.\n- You are NOT doing reprocessing in this conversation. You are only collecting the assessment components. The bilateral stimulation comes later in the app.\n- Do not give therapeutic advice or interpretations. Reflect, don't analyze.\n\nWHAT YOU ARE COLLECTING (across the workflow stages, in order):\n1. A specific disturbing event or memory\n2. A single freeze-frame image representing the worst part\n3. A negative self-referential cognition (e.g. 'I am powerless', 'I am unsafe', 'There is something wrong with me') — must be a belief, present tense, self-referential, irrational\n4. A positive counterpart cognition (e.g. 'I am strong now', 'I am safe now') — present tense, self-referential, plausible\n5. Validity of Cognition (VOC) rating, 1–7, of the positive cognition\n6. The current emotion(s) when holding image + negative cognition\n7. Subjective Units of Disturbance (SUD), 0–10\n8. Body sensation location\n\nTECHNIQUES AVAILABLE if direct questioning fails:\n- Floatback: 'Now hold the image and negative belief in mind, and notice the sensations in your body, and just let your mind float back to an earlier time and tell me the first scene that comes to mind where you felt this way before.'\n\n- Affect Scan: 'Hold the experience in mind, notice the emotions you’re having right now and notice what you’re feeling in your body. Now let your mind scan back to an earlier time when you may have felt this way before and just notice what comes to mind'\n\n- For body sensations the client can't locate: 'Close your eyes, think of the memory, and tell me what changes in your body — any tightening, heaviness, or shift.'\n\nGUARDRAILS \n- The event and freeze-frame image identification must be generated entirely by the user. NEVER suggest an event, NEVER describe the image, do not offer examples - let the user generate all content at these stages.\n- Negative cognition must be a self-referential present-tense belief, NOT a description of facts ('I am powerless' ✓, 'I was not in control' ✗, 'I am afraid' ✗ — fear is an emotion not a belief).\n- Positive cognition must avoid 'not'/'never'/'always' ('I can succeed' ✓, 'I will not fail' ✗) and must be plausibly believable (no wishful thinking).\n- If the client offers an invalid form, gently reshape it with a follow-up question — do not correct them bluntly.\n\nKeep responses under 2 sentences whenever possible. Your voice is doing the work — let the silences hold space.",
+        "prompt": "You are a calm, warm, and experienced EMDR clinician guiding a client through the target-image identification process that preludes EMDR therapy. Your sole purpose is to help the client identify a single target memory and have them describe a freeze frame of the \"sharpest\" moment of their said memory. You will then establish some baseline measures.\n\nCORE PRINCIPLES:\n- Speak conversationally, one short question at a time. Never monologue. Never list multiple questions.\n- Match the client's pace. If they need silence, be silent.\n- Accept whatever the client offers. Validate briefly, then move on.\n- If the client becomes distressed or abreactive, slow down, validate, and gently continue — do not push.\n- You are NOT doing reprocessing in this conversation. You are only collecting the assessment components. The bilateral stimulation comes later in the app.\n- Do not give therapeutic advice or interpretations. Reflect, don't analyze.\n\nWHAT YOU ARE COLLECTING (across the workflow stages, in order):\n1. A specific disturbing event or memory\n2. A single freeze-frame image representing the worst part\n3. A negative self-referential cognition (e.g. 'I am powerless', 'I am unsafe', 'There is something wrong with me') — must be a belief, present tense, self-referential, irrational\n4. A positive counterpart cognition (e.g. 'I am strong now', 'I am safe now') — present tense, self-referential, plausible\n5. Validity of Cognition (VOC) rating, 1–7, of the positive cognition\n6. The current emotion(s) when holding image + negative cognition\n7. Subjective Units of Disturbance (SUD), 0–10\n8. Body sensation location\n\nTECHNIQUES AVAILABLE if direct questioning fails:\n- Floatback: 'Now hold the image and negative belief in mind, and notice the sensations in your body, and just let your mind float back to an earlier time and tell me the first scene that comes to mind where you felt this way before.'\n\n- Affect Scan: 'Hold the experience in mind, notice the emotions you’re having right now and notice what you’re feeling in your body. Now let your mind scan back to an earlier time when you may have felt this way before and just notice what comes to mind'\n\n- For body sensations the client can't locate: 'Close your eyes, think of the memory, and tell me what changes in your body — any tightening, heaviness, or shift.'\n\nGUARDRAILS \n- The event and freeze-frame image identification must be generated entirely by the user. NEVER suggest an event, NEVER describe the image, do not offer examples - let the user generate all content at these stages.\n- Negative cognition must be a self-referential present-tense belief, NOT a description of facts ('I am powerless' ✓, 'I was not in control' ✗, 'I am afraid' ✗ — fear is an emotion not a belief).\n- Positive cognition must avoid 'not'/'never'/'always' ('I can succeed' ✓, 'I will not fail' ✗) and must be plausibly believable (no wishful thinking).\n- If the client offers an invalid form, gently reshape it with a follow-up question — do not correct them bluntly.\n\nKeep responses under 2 sentences whenever possible. Your voice is doing the work — let the silences hold space.",
         "llm": "gemini-2.5-flash",
         "reasoning_effort": null,
         "thinking_budget": null,
@@ -134,7 +142,7 @@
   },
   "metadata": {
     "created_at_unix_secs": 1779664916,
-    "updated_at_unix_secs": 1779673960
+    "updated_at_unix_secs": 1780952478
   },
   "platform_settings": {
     "evaluation": {
@@ -269,6 +277,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "image": {
@@ -278,6 +287,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "negative_cognition": {
@@ -287,6 +297,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "positive_cognition": {
@@ -296,6 +307,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "voc": {
@@ -305,6 +317,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "emotions": {
@@ -314,6 +327,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "sud": {
@@ -323,6 +337,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       },
       "body_location": {
@@ -332,6 +347,7 @@
         "is_system_provided": false,
         "dynamic_variable": "",
         "constant_value": "",
+        "is_omitted": false,
         "llm": null
       }
     },
@@ -576,6 +592,26 @@
           "condition": "The client has identified a body location for the disturbance (or has confirmed after coaching that they cannot access one), AND the agent has thanked them and indicated the assessment is complete."
         },
         "backward_condition": null
+      },
+      "edge_01ksfvf3rbeh0v7kweeyy1p2cq": {
+        "source": "event_node",
+        "target": "node_01ksfr00creh0v7kvpxfrrk37t",
+        "forward_condition": {
+          "label": "unable to pick specific event",
+          "type": "llm",
+          "condition": "The user is unable to narrow down their trauma to a specific event."
+        },
+        "backward_condition": null
+      },
+      "edge_01ksfw7jwgeh0v7kwq9v26v39n": {
+        "source": "node_01ksfr00creh0v7kvpxfrrk37t",
+        "target": "image_node",
+        "forward_condition": {
+          "label": "Event Selected",
+          "type": "llm",
+          "condition": "The user identified an image or memory."
+        },
+        "backward_condition": null
       }
     },
     "nodes": {
@@ -597,6 +633,9 @@
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -620,18 +659,21 @@
       "event_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
             }
           }
         },
-        "additional_prompt": "STAGE: Identify the disturbing event.\n\nAsk: 'What memory or experience would you like to work with today?' Listen. If they give a vague answer ('my childhood', 'the rape'), gently narrow: 'Is there a specific incident or moment that comes to mind first?'\n\nIf the client cannot identify a memory, use the FLOATBACK technique from the base prompt.\n\nDo not ask for graphic details. You only need to know enough to anchor the memory — a few words is plenty.\n\nAdvance as soon as the client has named a specific event/incident.",
+        "additional_prompt": "STAGE: Identify the disturbing event.\n\nAsk: 'What memory or experience would you like to work through with EMDR?' Listen. If they give a vague or broad answer (e.g. 'my childhood', 'the war'), gently narrow: 'Is there a specific incident or moment that comes to mind first?'\n\nDo not ask for graphic details at this stage. You only need to know enough to anchor the memory — a few words is plenty.\n\nIf the user is not sure what event to pick, advise them to pick the one that affects them the most, but explain that they don't need to worry about getting it perfectly right, as we just want a starting point for the processing sessions.\n\nAdvance as soon as the client has named a specific event/incident.",
         "additional_knowledge_base": [],
         "additional_tool_ids": [],
         "type": "override_agent",
@@ -640,7 +682,8 @@
           "y": -603.3031441445781
         },
         "edge_order": [
-          "event_to_image"
+          "event_to_image",
+          "edge_01ksfvf3rbeh0v7kweeyy1p2cq"
         ],
         "label": "Identify Event",
         "auto_advance_after_first_response": false
@@ -648,18 +691,21 @@
       "image_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
             }
           }
         },
-        "additional_prompt": "STAGE: Extract the freeze-frame image.\n\nAsk: 'What picture best represents that experience to you?' If they give many or seem confused, narrow: 'What picture represents the worst part of it as you think about it now?'\n\nIf the client cannot access the images of the event, use the AFFECT SCAN technique mentioned in the base prompt.\n\nIf the client doesn't think in images, that's fine — accept: 'Just think of the incident.' Note this in the conversation.\n\nThe image does not need to be vivid. A single brief description is sufficient.\n\nAdvance as soon as the client has identified a single image (or stated they don't see one).",
+        "additional_prompt": "STAGE: Extract the freeze-frame image.\n\nGoal: Have the user describe a single \"flashback\" or \"freeze frame\" image of the most emotionally charged moment of the event they named.\n\nExplain: We want to create a target image that represents the most disturbing part of the incident, that will serve as the cue in script for the later processing stage.\n\nAsk: 'What picture represents the worst part of that experience to you?' If they give many or seem confused, narrow: 'What picture represents the worst part of it as you think about it now?'. If they still struggle or hesitate, try: 'When you think of [EVENT], what moment of it feels the sharpest?'\n\nOnce the user has identified a freeze frame:\ninstruct them to hold that image in mind and ask them to describe the image through direct questioning:\n- What do you see? \n- Is there anything in the foreground? \n- The background?\n- Maybe to your left or right? \n- Are there any smells?\n- Do you hear any noises?\n- Does anything else come up?\n\nRead back the list of their responses to them and ask if they are correct, remove or modify any that aren't appropriately.\n\nAsk if they have anything else to add until they say they don't. \n\nIf the client doesn't think in images, that's fine — accept: 'Just think of the incident.' Note this in the conversation.\n\nAdvance as soon as the client has identified a single image (or stated they don't see one).\n",
         "additional_knowledge_base": [],
         "additional_tool_ids": [],
         "type": "override_agent",
@@ -676,11 +722,14 @@
       "neg_cog_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -704,11 +753,14 @@
       "pos_cog_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -732,11 +784,14 @@
       "voc_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -760,11 +815,14 @@
       "emotion_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -788,11 +846,14 @@
       "sud_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -816,11 +877,14 @@
       "body_node": {
         "conversation_config": {
           "turn": {
-            "turn_eagerness": null,
+            "turn_eagerness": "patient",
             "spelling_patience": null,
             "speculative_turn": false
           },
           "tts": {},
+          "conversation": {
+            "client_events": null
+          },
           "agent": {
             "prompt": {
               "built_in_tools": {}
@@ -848,6 +912,42 @@
           "y": 733.9716562717714
         },
         "edge_order": []
+      },
+      "node_01ksfr00creh0v7kvpxfrrk37t": {
+        "conversation_config": {
+          "turn": {
+            "turn_eagerness": "patient",
+            "spelling_patience": null,
+            "speculative_turn": null,
+            "retranscribe_on_turn_timeout": null
+          },
+          "tts": {
+            "voice_id": null
+          },
+          "conversation": {
+            "client_events": null
+          },
+          "agent": {
+            "prompt": {
+              "prompt": null,
+              "llm": null,
+              "built_in_tools": {}
+            }
+          }
+        },
+        "additional_prompt": "Goal: get the user to identify a specific moment of their trauma using the floatback technique.\n\n# Floatback technique\nUsed to identify an event that is not accessible through direct questioning. \nFirst, one question at a time, ask the client to: \n- bring to mind the recent disturbing experience, \n- identify how they feel when thinking about the experience, \n- notice and name the associated physical sensations.\n\nThen say verbatim, substituting the bracketed sections with what the client has shared earlier in this conversation:\n\"Now hold [REPEAT THE EVENT THE CLIENT DESCRIBED] and the belief\n[REPEAT THE NEGATIVE BELIEF THE CLIENT SHARED] in mind, and notice\n[REPEAT THE BODY SENSATIONS THE CLIENT NAMED], and just let your mind float back to earlier and tell me the first scene that comes to mind\" \n\nAdvance as soon as the client has named a specific event/incident.\n",
+        "additional_knowledge_base": [],
+        "additional_tool_ids": [],
+        "type": "override_agent",
+        "position": {
+          "x": 221.22409216899428,
+          "y": -423.81886625087077
+        },
+        "edge_order": [
+          "edge_01ksfw7jwgeh0v7kwq9v26v39n"
+        ],
+        "label": "Floatback Technique",
+        "auto_advance_after_first_response": false
       }
     },
     "prevent_subagent_loops": false
@@ -857,21 +957,18 @@
     "creator_name": "aidansoleil96@gmail.com",
     "creator_email": "aidansoleil96@gmail.com",
     "role": "admin",
-    "anonymous_access_level_override": null
+    "anonymous_access_level_override": null,
+    "access_source": "creator"
   },
   "tags": [
     "emdr",
     "target-identification",
     "phase-3"
   ],
-  "version_id": "agtvrsn_8701ksedb4daewcb8nfrascdv11y",
+  "version_id": "agtvrsn_3001ktmgmd9yefqvhxxyfmgqefja",
   "branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "main_branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "coaching_settings": null,
   "procedures": {},
-  "procedures_enabled": false,
-  "procedure_settings": {
-    "compiler_mode": "skills"
-  },
   "trust_context": "unknown"
 }
