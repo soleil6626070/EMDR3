@@ -4,6 +4,9 @@ session.currentCycle = 0
 session.totalCycles = 0
 session.active = false
 session.startTimestamp = ""
+-- Absolute path to the selected target's directory (set by target_select screen)
+session.selectedTargetDir = nil
+session.selectedTargetName = nil
 
 local ONGOING_FILE = "resources/audio/transcription_queue/.session_ongoing"
 
@@ -64,6 +67,8 @@ function session.reset()
     session.totalCycles = 0
     session.active = false
     session.startTimestamp = ""
+    session.selectedTargetDir  = nil
+    session.selectedTargetName = nil
 end
 
 return session

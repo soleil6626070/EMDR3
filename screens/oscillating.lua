@@ -12,7 +12,8 @@ local x, direction, speed
 -- Oscillation tracking
 local oscillationCount
 
--- Phase state machine: "normal" -> "slowing" -> "breathe_in" -> "breathe_out"
+-- Pre-session state machine: "confirm" -> "playing_cue_in" -> (oscillation phases)
+-- Oscillation phase state machine: "normal" -> "slowing" -> "breathe_in" -> "breathe_out"
 local phase
 local phaseTimer
 
@@ -28,8 +29,26 @@ local springA, springB, springW
 -- Which side of center the dot starts from (1 = right, -1 = left), used to prevent overshoot
 local springSign
 
--- Font for escape hint
-local hintFont
+-- Cue-in audio source
+local cueInSource = nil
+
+-- Fonts
+local hintFont, confirmFont
+
+local function loadCueInAudio()
+    local dir = session.selectedTargetDir
+    if not dir then return nil end
+    local path = dir .. "/cue_in.mp3"
+    local f = io.open(path, "rb")
+    if not f then return nil end
+    local data = f:read("*a")
+    f:close()
+    if not data or #data == 0 then return nil end
+    -- Write to Love2D save directory so love.audio can load it
+    love.filesystem.write("cue_in_playback.mp3", data)
+    local ok, src = pcall(love.audio.newSource, "cue_in_playback.mp3", "static")
+    return ok and src or nil
+end
 
 function oscillating.load()
     local W = love.graphics.getWidth()
@@ -37,28 +56,47 @@ function oscillating.load()
     direction = 1
     oscillationCount = 0
 
-    -- Speed in pixels per second: full width travel in (1/freq) seconds
     speed = (W - MARGIN * 2) * config.oscillation_frequency * 2
     baseSpeed = speed
 
-    -- Initialise phase state machine
-    phase = "normal"
     phaseTimer = 0
     currentRadius = RADIUS
     springA = 0
     springB = 0
     springW = 0
     springSign = 1
+    cueInSource = nil
 
-    hintFont = love.graphics.newFont(14)
+    hintFont    = love.graphics.newFont(14)
+    confirmFont = love.graphics.newFont(22)
+
+    -- Only show the confirmation + cue-in on the very first cycle.
+    -- Subsequent cycles (returning from notice_that) go straight to oscillating.
+    if session.currentCycle <= 1 then
+        phase = "confirm"
+    else
+        phase = "normal"
+    end
 end
 
 function oscillating.update(dt)
     local W = love.graphics.getWidth()
     local center = W / 2
 
+    -- Phase: Confirm — waiting for user to press Enter
+    if phase == "confirm" then
+        return  -- nothing to animate
+
+    -- Phase: Playing cue-in audio — wait for it to finish, then begin oscillation
+    elseif phase == "playing_cue_in" then
+        if cueInSource and not cueInSource:isPlaying() then
+            cueInSource = nil
+            phase = "normal"
+        end
+        return
+
     -- Phase: Normal — full-speed linear bounce (unchanged from original behaviour)
-    if phase == "normal" then
+    elseif phase == "normal" then
         x = x + direction * speed * dt
 
         -- Bounce off right wall
@@ -154,11 +192,36 @@ function oscillating.draw()
     love.graphics.setBackgroundColor(0.05, 0.05, 0.07)
     love.graphics.clear()
 
-    -- Oscillating dot (uses animated radius during breathing phases)
-    love.graphics.setColor(0.72, 0.11, 0.20)
-    love.graphics.circle("fill", x, cy, currentRadius)
+    if phase == "confirm" then
+        -- Confirmation screen: prompt before cue-in audio plays
+        love.graphics.setFont(confirmFont)
+        love.graphics.setColor(0.85, 0.90, 1.0)
 
-    -- Escape hint
+        local targetName = (session.selectedTargetName or "your target"):gsub("_", " ")
+        local line1 = "Target: " .. targetName
+        local line2 = "Are you ready to begin?"
+        love.graphics.print(line1, (W - confirmFont:getWidth(line1)) / 2, cy - 60)
+        love.graphics.print(line2, (W - confirmFont:getWidth(line2)) / 2, cy - 10)
+
+        love.graphics.setFont(hintFont)
+        love.graphics.setColor(0.5, 0.6, 0.8)
+        local hint = "Enter — begin   Escape — back to target selection"
+        love.graphics.print(hint, (W - hintFont:getWidth(hint)) / 2, cy + 40)
+
+    elseif phase == "playing_cue_in" then
+        -- Show a quiet "listening" indicator while the cue-in plays
+        love.graphics.setFont(confirmFont)
+        love.graphics.setColor(0.6, 0.75, 0.95, 0.8)
+        local msg = "Listen..."
+        love.graphics.print(msg, (W - confirmFont:getWidth(msg)) / 2, cy - 16)
+
+    else
+        -- Oscillating dot (uses animated radius during breathing phases)
+        love.graphics.setColor(0.72, 0.11, 0.20)
+        love.graphics.circle("fill", x, cy, currentRadius)
+    end
+
+    -- Escape hint (always visible)
     love.graphics.setFont(hintFont)
     love.graphics.setColor(0.3, 0.3, 0.4)
     love.graphics.print("Escape — return to menu", 20, H - 36)
@@ -166,8 +229,22 @@ end
 
 function oscillating.keypressed(k)
     if k == "escape" then
+        if cueInSource then cueInSource:stop() end
         session.reset()
         switchScreen("menu")
+
+    elseif k == "return" or k == "kpenter" then
+        if phase == "confirm" then
+            -- Try to load and play cue-in audio
+            cueInSource = loadCueInAudio()
+            if cueInSource then
+                cueInSource:play()
+                phase = "playing_cue_in"
+            else
+                -- No audio found — start oscillation directly
+                phase = "normal"
+            end
+        end
     end
 end
 

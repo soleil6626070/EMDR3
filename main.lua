@@ -7,10 +7,13 @@ local config        = require("config")
 local tts           = require("modules.tts")
 local transcription = require("modules.transcription")
 local agent         = require("modules.agent")
+local cue_in        = require("modules.cue_in")
 
 local screens = {
     menu                    = require("screens.menu"),
     target_identification   = require("screens.target_identification"),
+    target_select           = require("screens.target_select"),
+    cue_in_review           = require("screens.cue_in_review"),
     oscillating             = require("screens.oscillating"),
     noticed                 = require("screens.noticed"),
     notice_that             = require("screens.notice_that"),
@@ -29,6 +32,7 @@ function love.load()
     tts.init(config)
     transcription.init(config)
     agent.init(config)
+    cue_in.init(config)
     screens[currentScreen].load()
 end
 
@@ -36,6 +40,7 @@ function love.update(dt)
     tts.update()
     transcription.update()
     agent.update()
+    cue_in.update()
     screens[currentScreen].update(dt)
 end
 
@@ -47,8 +52,15 @@ function love.keypressed(k)
     screens[currentScreen].keypressed(k)
 end
 
+function love.textinput(t)
+    if screens[currentScreen].textinput then
+        screens[currentScreen].textinput(t)
+    end
+end
+
 function love.quit()
     tts.shutdown()
     transcription.shutdown()
     agent.shutdown()
+    cue_in.shutdown()
 end

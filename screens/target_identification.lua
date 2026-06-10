@@ -2,8 +2,9 @@
 -- Conversation UI for ElevenLabs agent-based target identification.
 -- Captures mic audio, streams to agent, displays status + live transcript.
 
-local agent  = require("modules.agent")
-local config = require("config")
+local agent   = require("modules.agent")
+local cue_in  = require("modules.cue_in")
+local config  = require("config")
 
 local tid = {}
 
@@ -30,30 +31,35 @@ local function writeTranscript()
     local filename = "target_image_" .. timestamp .. ".txt"
     local filepath = outDir .. "/" .. filename
 
+    -- Build content string (used both for file and for passing to cue_in.generate)
+    local lines = {}
+    lines[#lines+1] = "Target Identification"
+    lines[#lines+1] = "Date: " .. os.date("%Y-%m-%d %H:%M:%S")
+    local conv_id = agent.getConversationId()
+    if conv_id then
+        lines[#lines+1] = "Conversation ID: " .. conv_id
+    end
+    lines[#lines+1] = ""
+    lines[#lines+1] = "===== RAW TRANSCRIPT ====="
+    lines[#lines+1] = ""
+    for _, entry in ipairs(transcript) do
+        local role = entry.role == "agent" and "Agent" or "User"
+        lines[#lines+1] = role .. ": " .. entry.text
+    end
+    lines[#lines+1] = ""
+    lines[#lines+1] = "===== END OF TRANSCRIPT ====="
+    local content = table.concat(lines, "\n") .. "\n"
+
     local f = io.open(filepath, "w")
     if not f then
         print("[TID] Failed to write: " .. filepath)
         return nil
     end
-
-    f:write("Target Identification\n")
-    f:write("Date: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n")
-    local conv_id = agent.getConversationId()
-    if conv_id then
-        f:write("Conversation ID: " .. conv_id .. "\n")
-    end
-    f:write("\n===== RAW TRANSCRIPT =====\n\n")
-
-    for _, entry in ipairs(transcript) do
-        local role = entry.role == "agent" and "Agent" or "User"
-        f:write(role .. ": " .. entry.text .. "\n")
-    end
-
-    f:write("\n===== END OF TRANSCRIPT =====\n")
+    f:write(content)
     f:close()
 
     print("[TID] Transcript saved: " .. filepath)
-    return filepath
+    return filepath, content
 end
 
 --- Start mic recording at 16kHz for streaming to agent.
@@ -253,7 +259,10 @@ function tid.keypressed(k)
         end
     elseif k == "return" or k == "kpenter" then
         if not agent.isActive() then
-            writeTranscript()
+            local _, transcriptText = writeTranscript()
+            if transcriptText then
+                cue_in.generate(transcriptText)
+            end
             agent.reset()
             switchScreen("menu")
         end

@@ -16,7 +16,16 @@ end
 
 -- API Keys (from .env)
 config.OPENAI_API_KEY     = config.OPEN_AI_API_EMDR_KEY
+config.ANTHROPIC_API_KEY  = config.ANTHROPIC_API_EMDR_KEY
 config.ELEVENLABS_API_KEY = config.ELEVENLABS_API_EMDR_KEY
+
+-- LLM settings for cue-in script generation
+-- Provider: "openai" | "anthropic"
+config.LLM_PROVIDER = "openai"
+config.LLM_MODEL    = "gpt-4o-mini"   -- or "claude-haiku-4-5-20251001" for anthropic
+
+-- Target images directory (relative to project source)
+config.TARGETS_DIR = "output_data/targets"
 
 -- TTS Settings (Not Target Image Identification Agent Settings)
 config.ELEVENLABS_VOICE_ID  = "eR40ATw9ArzDf9h3v7t7"  -- Addison 2.0
