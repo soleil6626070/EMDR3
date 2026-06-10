@@ -92,7 +92,7 @@ local function read_bytes(sock, n, timeout, prefix)
         -- LuaSec TLS sockets report "wantread"/"wantwrite" instead of "timeout"
         -- when no data is ready yet; these are non-fatal "try again" statuses.
         elseif err == "timeout" or err == "wantread" or err == "wantwrite" then
-            -- keep trying until the deadline
+            socket.sleep(0.001)  -- yield CPU; prevents busy-spin on wantread/wantwrite
         else
             return nil, err, data
         end
