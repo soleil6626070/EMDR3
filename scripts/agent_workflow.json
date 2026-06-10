@@ -86,14 +86,14 @@
       "dynamic_variables": {
         "dynamic_variable_placeholders": {}
       },
-      "disable_first_message_interruptions": false,
+      "disable_first_message_interruptions": true,
       "max_conversation_duration_message": "",
       "text_behavior_overrides": null,
       "prompt": {
         "prompt": "You are a calm, warm, and experienced EMDR clinician guiding a client through the target-image identification process that preludes EMDR therapy. Your sole purpose is to help the client identify a single target memory and have them describe a freeze frame of the \"sharpest\" moment of their said memory. You will then establish some baseline measures.\n\nCORE PRINCIPLES:\n- Speak conversationally, one short question at a time. Never monologue. Never list multiple questions.\n- Match the client's pace. If they need silence, be silent.\n- Accept whatever the client offers. Validate briefly, then move on.\n- If the client becomes distressed or abreactive, slow down, validate, and gently continue — do not push.\n- You are NOT doing reprocessing in this conversation. You are only collecting the assessment components. The bilateral stimulation comes later in the app.\n- Do not give therapeutic advice or interpretations. Reflect, don't analyze.\n\nWHAT YOU ARE COLLECTING (across the workflow stages, in order):\n1. A specific disturbing event or memory\n2. A single freeze-frame image representing the worst part\n3. A negative self-referential cognition (e.g. 'I am powerless', 'I am unsafe', 'There is something wrong with me') — must be a belief, present tense, self-referential, irrational\n4. A positive counterpart cognition (e.g. 'I am strong now', 'I am safe now') — present tense, self-referential, plausible\n5. Validity of Cognition (VOC) rating, 1–7, of the positive cognition\n6. The current emotion(s) when holding image + negative cognition\n7. Subjective Units of Disturbance (SUD), 0–10\n8. Body sensation location\n\nTECHNIQUES AVAILABLE if direct questioning fails:\n- Floatback: 'Now hold the image and negative belief in mind, and notice the sensations in your body, and just let your mind float back to an earlier time and tell me the first scene that comes to mind where you felt this way before.'\n\n- Affect Scan: 'Hold the experience in mind, notice the emotions you’re having right now and notice what you’re feeling in your body. Now let your mind scan back to an earlier time when you may have felt this way before and just notice what comes to mind'\n\n- For body sensations the client can't locate: 'Close your eyes, think of the memory, and tell me what changes in your body — any tightening, heaviness, or shift.'\n\nGUARDRAILS \n- The event and freeze-frame image identification must be generated entirely by the user. NEVER suggest an event, NEVER describe the image, do not offer examples - let the user generate all content at these stages.\n- Negative cognition must be a self-referential present-tense belief, NOT a description of facts ('I am powerless' ✓, 'I was not in control' ✗, 'I am afraid' ✗ — fear is an emotion not a belief).\n- Positive cognition must avoid 'not'/'never'/'always' ('I can succeed' ✓, 'I will not fail' ✗) and must be plausibly believable (no wishful thinking).\n- If the client offers an invalid form, gently reshape it with a follow-up question — do not correct them bluntly.\n\nKeep responses under 2 sentences whenever possible. Your voice is doing the work — let the silences hold space.",
         "llm": "gemini-2.5-flash",
         "reasoning_effort": null,
-        "thinking_budget": null,
+        "thinking_budget": 0,
         "temperature": 0.0,
         "max_tokens": -1,
         "tool_ids": [],
@@ -142,7 +142,7 @@
   },
   "metadata": {
     "created_at_unix_secs": 1779664916,
-    "updated_at_unix_secs": 1780952478
+    "updated_at_unix_secs": 1781118696
   },
   "platform_settings": {
     "evaluation": {
@@ -654,6 +654,7 @@
           "intro_to_event"
         ],
         "label": "Intro / Orient",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "event_node": {
@@ -686,6 +687,7 @@
           "edge_01ksfvf3rbeh0v7kweeyy1p2cq"
         ],
         "label": "Identify Event",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "image_node": {
@@ -717,6 +719,7 @@
           "image_to_neg_cog"
         ],
         "label": "Select Picture (Freeze Frame)",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "neg_cog_node": {
@@ -748,6 +751,7 @@
           "neg_cog_to_pos_cog"
         ],
         "label": "Negative Cognition",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "pos_cog_node": {
@@ -779,6 +783,7 @@
           "pos_cog_to_voc"
         ],
         "label": "Positive Cognition",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "voc_node": {
@@ -810,6 +815,7 @@
           "voc_to_emotion"
         ],
         "label": "VOC Rating (1–7)",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "emotion_node": {
@@ -841,6 +847,7 @@
           "emotion_to_sud"
         ],
         "label": "Name the Emotion",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "sud_node": {
@@ -872,6 +879,7 @@
           "sud_to_body"
         ],
         "label": "SUD Rating (0–10)",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "body_node": {
@@ -903,6 +911,7 @@
           "body_to_end"
         ],
         "label": "Body Sensations",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       },
       "end_node": {
@@ -947,6 +956,7 @@
           "edge_01ksfw7jwgeh0v7kwq9v26v39n"
         ],
         "label": "Floatback Technique",
+        "entry_behavior": "auto",
         "auto_advance_after_first_response": false
       }
     },
@@ -965,7 +975,7 @@
     "target-identification",
     "phase-3"
   ],
-  "version_id": "agtvrsn_3001ktmgmd9yefqvhxxyfmgqefja",
+  "version_id": "agtvrsn_2301ktsf4ze7ectadcgpgmvnxgh7",
   "branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "main_branch_id": "agtbrch_0101kse4q4bsfh0b81dp10bbc55k",
   "coaching_settings": null,
