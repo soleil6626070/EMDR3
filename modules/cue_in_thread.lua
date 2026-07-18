@@ -12,8 +12,8 @@ local cfg = configChannel:demand()
 package.cpath = cfg.source_path .. "/lib/?.so;" .. cfg.source_path .. "/lib/?.dll;" .. package.cpath
 package.path  = cfg.source_path .. "/lib/?.lua;" .. cfg.source_path .. "/lib/?/init.lua;" .. package.path
 
-local https = require("https")
-local json  = require("json")
+local https      = require("https")
+local llm_client = require("llm_client")
 
 ----------------------------------------------------------------------
 -- Helpers
@@ -35,91 +35,6 @@ local function writeFile(path, text)
     f:write(text)
     f:close()
     return true
-end
-
-----------------------------------------------------------------------
--- LLM API call
-----------------------------------------------------------------------
-
---- Call OpenAI chat completions API.
--- Returns response text or nil + error.
-local function callOpenAI(transcript, systemPrompt, model, apiKey)
-    local url = "https://api.openai.com/v1/chat/completions"
-
-    local body = json.encode({
-        model = model,
-        messages = {
-            { role = "system", content = systemPrompt },
-            { role = "user",   content = transcript },
-        },
-        temperature = 0.3,
-    })
-
-    local code, respBody = https.request(url, {
-        method  = "POST",
-        headers = {
-            ["Content-Type"]  = "application/json",
-            ["Authorization"] = "Bearer " .. apiKey,
-        },
-        data = body,
-    })
-
-    if code ~= 200 then
-        return nil, "OpenAI HTTP " .. tostring(code) .. ": " .. tostring(respBody):sub(1, 300)
-    end
-
-    local ok, parsed = pcall(json.decode, respBody)
-    if not ok or type(parsed) ~= "table" then
-        return nil, "OpenAI: failed to parse response"
-    end
-
-    local choices = parsed.choices
-    if not choices or not choices[1] then
-        return nil, "OpenAI: no choices in response"
-    end
-
-    return choices[1].message.content
-end
-
---- Call Anthropic Messages API.
--- Returns response text or nil + error.
-local function callAnthropic(transcript, systemPrompt, model, apiKey)
-    local url = "https://api.anthropic.com/v1/messages"
-
-    local body = json.encode({
-        model      = model,
-        max_tokens = 512,
-        system     = systemPrompt,
-        messages   = {
-            { role = "user", content = transcript },
-        },
-    })
-
-    local code, respBody = https.request(url, {
-        method  = "POST",
-        headers = {
-            ["Content-Type"]      = "application/json",
-            ["x-api-key"]         = apiKey,
-            ["anthropic-version"] = "2023-06-01",
-        },
-        data = body,
-    })
-
-    if code ~= 200 then
-        return nil, "Anthropic HTTP " .. tostring(code) .. ": " .. tostring(respBody):sub(1, 300)
-    end
-
-    local ok, parsed = pcall(json.decode, respBody)
-    if not ok or type(parsed) ~= "table" then
-        return nil, "Anthropic: failed to parse response"
-    end
-
-    local content = parsed.content
-    if not content or not content[1] then
-        return nil, "Anthropic: no content in response"
-    end
-
-    return content[1].text
 end
 
 ----------------------------------------------------------------------
@@ -168,25 +83,21 @@ while true do
     local transcript = req.transcript
 
     -- 1. Call LLM
-    local llmText, llmErr
-    if cfg.provider == "anthropic" then
-        llmText, llmErr = callAnthropic(transcript, cfg.system_prompt, cfg.model, cfg.anthropic_api_key)
-    else
-        llmText, llmErr = callOpenAI(transcript, cfg.system_prompt, cfg.model, cfg.openai_api_key)
-    end
+    local llmText, llmErr = llm_client.chat({
+        provider = cfg.provider,
+        model    = cfg.model,
+        api_key  = cfg.provider == "anthropic" and cfg.anthropic_api_key or cfg.openai_api_key,
+        system   = cfg.system_prompt,
+        user     = transcript,
+    })
 
     if not llmText then
         pushError("LLM call failed: " .. tostring(llmErr))
         -- keep thread alive for next request
     else
         -- 2. Parse the JSON response {"slug": "...", "script": "..."}
-        -- Strip any accidental markdown fences the model might add
-        local cleaned = llmText:match("```json%s*(.-)%s*```") or
-                        llmText:match("```%s*(.-)%s*```") or
-                        llmText
-
-        local ok, parsed = pcall(json.decode, cleaned)
-        if not ok or type(parsed) ~= "table" or not parsed.slug or not parsed.script then
+        local parsed = llm_client.parse_json(llmText)
+        if not parsed or not parsed.slug or not parsed.script then
             pushError("LLM returned unexpected format: " .. tostring(llmText):sub(1, 200))
         else
             local slug   = parsed.slug:gsub("[^%w_%-]", "_"):lower()

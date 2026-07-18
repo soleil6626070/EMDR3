@@ -8,6 +8,7 @@ local tts           = require("modules.tts")
 local transcription = require("modules.transcription")
 local agent         = require("modules.agent")
 local cue_in        = require("modules.cue_in")
+local llm           = require("modules.llm")
 
 local makeRatingScreen = require("screens.rating")
 
@@ -37,6 +38,7 @@ function love.load()
     transcription.init(config)
     agent.init(config)
     cue_in.init(config)
+    llm.init(config)
     screens[currentScreen].load()
 end
 
@@ -45,6 +47,7 @@ function love.update(dt)
     transcription.update()
     agent.update()
     cue_in.update()
+    llm.update()
     screens[currentScreen].update(dt)
 end
 
@@ -67,4 +70,5 @@ function love.quit()
     transcription.shutdown()
     agent.shutdown()
     cue_in.shutdown()
+    llm.shutdown()
 end
