@@ -1,18 +1,13 @@
 -- scripts/audio_generation/main.lua
--- Generates TTS audio variants via ElevenLabs API.
--- Run from project root:  love scripts/audio_generation
+-- Generates all pre-cached TTS audio via the ElevenLabs API, driven by
+-- manifest.lua in this directory. Run from project root:
+--   love scripts/audio_generation
+--
+-- Files that already exist are skipped, so re-running after adding a manifest
+-- entry only generates the new audio. Delete a file (or set FORCE = true) to
+-- regenerate it after editing its text.
 
--- ============================================================
--- CONFIGURE WHAT TO GENERATE HERE
--- ============================================================
-
-local TEXT        = "Notice that."       -- The phrase to speak
-local FILE_PREFIX = "notice_that"        -- Output files: {prefix}_1.mp3, {prefix}_2.mp3, ...
-local VARIANTS    = 10                   -- Number of audio variants to generate
-local SPEED       = 0.8                  -- Speech speed (0.7 = slower, 1.0 = normal, 1.2 = faster)
-local SUBFOLDER   = "notice_that"        -- Output subfolder under resources/audio/
-
--- ============================================================
+local FORCE = false
 
 function love.load()
     -- Project root = the directory love was launched from
@@ -23,6 +18,8 @@ function love.load()
                  .. projectRoot .. "/lib/?.dll;"
                  .. package.cpath
     local https = require("https")
+
+    local manifest = dofile(projectRoot .. "/scripts/audio_generation/manifest.lua")
 
     -- Parse .env
     local env = {}
@@ -48,54 +45,70 @@ function love.load()
         return
     end
 
-    -- ElevenLabs config (matches config.lua)
-    local voice_id = "EXAVITQu4vr4xnSDxMaL"  -- Sarah (default premade, free-plan compatible)
+    -- One voice everywhere: the app voice (Addison 2.0, config.ELEVENLABS_VOICE_ID).
+    -- Overridable via ELEVENLABS_VOICE_ID in .env; keep the default in sync with
+    -- config.lua.
+    local voice_id = env.ELEVENLABS_VOICE_ID or "eR40ATw9ArzDf9h3v7t7"
     local model_id = "eleven_multilingual_v2"
     local base_url = "https://api.elevenlabs.io/v1"
 
-    -- Ensure output directory exists
-    local outDir = projectRoot .. "/resources/audio/" .. SUBFOLDER
-    os.execute('mkdir -p "' .. outDir .. '"')
+    local generated, skipped, failed = 0, 0, 0
 
-    -- Build request body
-    local escaped_text = TEXT:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r')
-    local body = string.format(
-        '{"text":"%s","model_id":"%s","voice_settings":{"stability":0.5,"similarity_boost":0.75,"speed":%.1f}}',
-        escaped_text, model_id, SPEED
-    )
+    for _, entry in ipairs(manifest) do
+        local outDir = projectRoot .. "/resources/audio/" .. entry.subfolder
+        os.execute('mkdir -p "' .. outDir .. '"')
 
-    print(string.format("Generating \"%s\" (%d variants) → %s/", TEXT, VARIANTS, SUBFOLDER))
+        local escaped_text = entry.text:gsub('\\', '\\\\'):gsub('"', '\\"')
+                                       :gsub('\n', '\\n'):gsub('\r', '\\r')
+        local body = string.format(
+            '{"text":"%s","model_id":"%s","voice_settings":{"stability":0.5,"similarity_boost":0.75,"speed":%.2f}}',
+            escaped_text, model_id, entry.speed or 1.0
+        )
 
-    for n = 1, VARIANTS do
-        local filename = FILE_PREFIX .. "_" .. n .. ".mp3"
-        local outPath = outDir .. "/" .. filename
+        for n = 1, entry.variants or 1 do
+            local filename = entry.prefix .. "_" .. n .. ".mp3"
+            local outPath = outDir .. "/" .. filename
 
-        print(string.format("[%d/%d] Generating %s...", n, VARIANTS, filename))
-
-        local code, responseBody = https.request(base_url .. "/text-to-speech/" .. voice_id, {
-            method  = "POST",
-            headers = {
-                ["Accept"]       = "audio/mpeg",
-                ["Content-Type"] = "application/json",
-                ["xi-api-key"]   = api_key,
-            },
-            data = body,
-        })
-
-        if code == 200 then
-            local f = io.open(outPath, "wb")
-            if f then
-                f:write(responseBody)
-                f:close()
-                print(string.format("  Saved %s (%d bytes)", filename, #responseBody))
+            local existing = io.open(outPath, "rb")
+            if existing and not FORCE then
+                existing:close()
+                skipped = skipped + 1
+                print("SKIP (exists): " .. entry.subfolder .. "/" .. filename)
             else
-                print(string.format("  ERROR: Could not write to %s", outPath))
+                if existing then existing:close() end
+                print(string.format("Generating %s/%s ...", entry.subfolder, filename))
+
+                local code, responseBody = https.request(base_url .. "/text-to-speech/" .. voice_id, {
+                    method  = "POST",
+                    headers = {
+                        ["Accept"]       = "audio/mpeg",
+                        ["Content-Type"] = "application/json",
+                        ["xi-api-key"]   = api_key,
+                    },
+                    data = body,
+                })
+
+                if code == 200 then
+                    local f = io.open(outPath, "wb")
+                    if f then
+                        f:write(responseBody)
+                        f:close()
+                        generated = generated + 1
+                        print(string.format("  Saved %s (%d bytes)", filename, #responseBody))
+                    else
+                        failed = failed + 1
+                        print("  ERROR: Could not write to " .. outPath)
+                    end
+                else
+                    failed = failed + 1
+                    print(string.format("  ERROR: HTTP %s — %s", tostring(code),
+                                        tostring(responseBody):sub(1, 200)))
+                end
             end
-        else
-            print(string.format("  ERROR: HTTP %s — %s", tostring(code), tostring(responseBody)))
         end
     end
 
-    print("Done!")
-    love.event.quit()
+    print(string.format("Done. %d generated, %d skipped, %d failed.",
+                        generated, skipped, failed))
+    love.event.quit(failed > 0 and 1 or 0)
 end

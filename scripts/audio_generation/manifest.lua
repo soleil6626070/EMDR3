@@ -51,4 +51,10 @@ return {
       text = "Thank you. Rest here for a moment, and breathe." },
     { subfolder = "ident/bridge", prefix = "bridge_d", variants = 1, speed = 0.9,
       text = "Well done. A slow breath in... and a long breath out." },
+
+    -- Pre-existing loose end: notice_that.lua expects this directory but the audio
+    -- was never generated (the old single-entry generator was configured for it but
+    -- not run). Included here so one run also closes that gap.
+    { subfolder = "notice_that", prefix = "notice_that", variants = 10, speed = 0.8,
+      text = "Notice that." },
 }
