@@ -1,6 +1,11 @@
 -- modules/transcription.lua
--- Main-thread transcription API. Enqueues WAV files for background whisper-cli processing.
--- The worker thread handles everything: transcribe, save to file, delete WAV.
+-- Main-thread transcription API. Enqueues WAV files for background whisper-cli
+-- processing; the worker returns plain text over the status channel and this
+-- module saves it into the session JSON record and deletes the WAV. The main
+-- thread is the single writer of record files (ratings are written directly by
+-- modules/session_record.lua), so writes can never race.
+
+local session_json = require("modules.session_json")
 
 local transcription = {}
 
@@ -122,16 +127,23 @@ function transcription.enqueue(file_path, cycle, session_id, record_path)
     })
 end
 
-function transcription.isEnabled()
-    return enabled
-end
-
---- Push a non-transcription message (e.g. "merge_record") to the worker so
---- session-record writes stay serialized with response inserts.
-function transcription.pushControl(msg)
-    if not enabled then return false end
-    requestChannel:push(msg)
-    return true
+--- Handle one worker result on the main thread: save the transcript into the
+--- session record, then delete the WAV. Deleting only after a successful save
+--- keeps responses crash-safe; a failed job preserves its WAV for retry.
+local function handleResult(status)
+    if status.success and status.text and status.text ~= "" then
+        local recordPath = status.record_path
+        if not recordPath then
+            -- Recovered WAV with no known record (predates per-target records)
+            recordPath = outputDir .. "/session_" .. status.session_id .. ".json"
+            session_json.ensureDir(recordPath)
+        end
+        session_json.upsertResponse(recordPath, status.session_id, status.cycle, status.text)
+        os.remove(status.file_path)
+    else
+        print("[Transcription] Failed for " .. tostring(status.file_path)
+            .. " — preserving WAV for retry")
+    end
 end
 
 function transcription.update()
@@ -143,10 +155,11 @@ function transcription.update()
         print("[Transcription] Thread error: " .. err)
     end
 
-    -- Pop all available status notifications
+    -- Pop all available worker results
     while true do
         local status = statusChannel:pop()
         if not status then break end
+        handleResult(status)
         pendingCount = pendingCount - 1
         completedCount = completedCount + 1
     end
@@ -169,11 +182,12 @@ function transcription.shutdown()
         requestChannel:push("quit")
         thread:wait()
     end
-    -- Drain any final status notifications
+    -- Drain and save any final worker results
     if statusChannel then
         while true do
             local status = statusChannel:pop()
             if not status then break end
+            handleResult(status)
             pendingCount = pendingCount - 1
             completedCount = completedCount + 1
         end

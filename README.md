@@ -58,16 +58,16 @@ flowchart TD
     subgraph modules["Modules — main thread APIs"]
         Agent["agent.lua\nconversational AI state"]
         TTS["tts.lua\nElevenLabs TTS requests"]
-        Trans["transcription.lua\nwhisper job queue"]
+        Trans["transcription.lua\nwhisper job queue;\nsaves results into session JSON"]
         CueIn["cue_in.lua\nLLM → script → TTS pipeline"]
-        SRec["session_record.lua\nrating/meta writes →\nworker channel"]
-        SJson["session_json.lua\nshared JSON load/merge/upsert\n(pure Lua, both threads)"]
+        SRec["session_record.lua\ndirect rating/meta writes\n(main thread = single writer)"]
+        SJson["session_json.lua\nJSON load/merge/upsert\n(pure Lua)"]
     end
 
     subgraph threads["Worker Threads"]
         AgentT["agent_thread.lua\nWebSocket ↔ ElevenLabs\nConversational AI"]
         TTST["tts_thread.lua\nPOST → ElevenLabs\nTTS API"]
-        TransT["transcription_thread.lua\nruns whisper-cli\nsingle writer of session JSON"]
+        TransT["transcription_thread.lua\nruns whisper-cli\nreturns text only"]
         CueInT["cue_in_thread.lua\nPOST → OpenAI/Anthropic\nPOST → ElevenLabs TTS\nsaves targets/ folder"]
     end
 
@@ -89,9 +89,9 @@ flowchart TD
     CueInT --> Targets
     TSel --> Targets
     Rating --> SRec
-    SRec -->|merge_record msg| Trans
-    SRec -.->|direct write if\nwhisper disabled| SJson
-    TransT --> SJson
+    SRec --> SJson
+    TransT -->|text via status channel| Trans
+    Trans --> SJson
     SJson --> Targets
     Osc -->|cue_in.mp3| Load
     Noticed --> Trans
@@ -118,6 +118,12 @@ flowchart TD
 - Marker extended to timestamp / last *completed* cycle / target dir / name / total cycles. Fixes an off-by-one where a crash during cycle 1 would have resumed at cycle 2.
 - Menu shows "Resume Session — <target> (cycle N/total)" when a valid marker exists; resume replays confirm + cue-in, continues at the correct cycle into the same JSON record, and goes straight to post-rating if all cycles were done. Escape mid-session = pause (resumable), by decision.
 - `session.writeOngoing` now creates the queue dir itself (git had pruned the empty dir, which would have silently disabled markers when whisper is off).
+
+**Single-writer flipped to the main thread** (resolves CONSIDERATIONS #6)
+- The whisper worker is now a pure transcriber: WAV job in, text out over the status channel. It no longer writes record files or deletes WAVs.
+- `transcription.lua` saves each result into the session JSON on the main thread, then deletes the WAV — same crash-safety rule (WAV survives until its text is saved), same idempotent upsert-by-cycle.
+- Ratings are written directly by `session_record.lua` at the moment of confirmation — durable instantly, no longer queued in RAM behind a whisper backlog. The `merge_record` channel plumbing and whisper-disabled fallback are deleted.
+- A JSON write is ~1ms once per completed transcription; whisper itself stays off the main thread, so the no-lag property of the worker design is unchanged.
 - Merged `elevenlabs` → `main` (had never been pushed), then this work as `linked-list` → `main`; both branches deleted.
 
 ### Session — 2026-06-10

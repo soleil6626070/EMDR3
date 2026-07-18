@@ -1,7 +1,7 @@
 -- modules/session_json.lua
--- Shared read/merge/write helpers for the per-session JSON record.
--- Pure Lua + io/os only, so it can be required from both the main thread and
--- worker threads (no love.* calls here).
+-- Read/merge/write helpers for the per-session JSON record.
+-- Pure Lua + io/os only (no love.* calls). All record writes happen on the
+-- main thread — the whisper worker only returns text, it never writes records.
 --
 -- Record shape:
 -- {
@@ -52,10 +52,15 @@ local function encodeRecord(r)
     return table.concat(lines, "\n") .. "\n"
 end
 
-function session_json.save(path, record)
+--- Create the parent directory for a record path. Called once when a record
+--- is created — not in save(), which runs on the main thread per write and
+--- shouldn't spawn a shell each time.
+function session_json.ensureDir(path)
     local dir = path:match("^(.*)/[^/]+$")
     if dir then os.execute('mkdir -p "' .. dir .. '"') end
+end
 
+function session_json.save(path, record)
     local f = io.open(path, "w")
     if not f then
         print("[SessionJSON] Could not open for writing: " .. path)

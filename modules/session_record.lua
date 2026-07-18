@@ -2,14 +2,13 @@
 -- Main-thread API for the per-session JSON record saved under
 -- output_data/targets/<slug>/sessions/session_<id>.json.
 --
--- The transcription worker is the single writer of these files (it inserts
--- transcribed responses as they complete), so rating writes are routed
--- through its request channel to keep all writes serialized. If the worker
--- is disabled (no whisper), there is no second writer and we write directly.
+-- The main thread is the single writer of record files: ratings are written
+-- here directly (durable the moment the user confirms them), and transcribed
+-- responses are written by modules/transcription.lua as worker results arrive.
+-- The whisper worker itself never touches these files, so writes cannot race.
 
-local session       = require("modules.session")
-local transcription = require("modules.transcription")
-local session_json  = require("modules.session_json")
+local session      = require("modules.session")
+local session_json = require("modules.session_json")
 
 local session_record = {}
 
@@ -24,21 +23,11 @@ function session_record.currentPath()
     return base .. "/session_" .. session.startTimestamp .. ".json"
 end
 
-local function write(path, fields)
-    if transcription.isEnabled() then
-        transcription.pushControl({
-            type        = "merge_record",
-            record_path = path,
-            fields      = fields,
-        })
-    else
-        session_json.merge(path, fields)
-    end
-end
-
 --- Create the record at session start, once the pre-rating is confirmed.
 function session_record.begin(pre_sud)
-    write(session_record.currentPath(), {
+    local path = session_record.currentPath()
+    session_json.ensureDir(path)
+    session_json.merge(path, {
         session_id   = session.startTimestamp,
         target       = session.selectedTargetName,
         started      = os.date("%Y-%m-%d %H:%M:%S"),
@@ -51,7 +40,7 @@ end
 --- Close out the record with the post-rating. Takes an explicit path because
 --- the session state is reset right after this call.
 function session_record.finish(record_path, post_sud)
-    write(record_path, { post_sud = post_sud, completed = true })
+    session_json.merge(record_path, { post_sud = post_sud, completed = true })
 end
 
 return session_record
