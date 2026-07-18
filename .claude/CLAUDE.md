@@ -98,6 +98,11 @@ graph TD
 
 A crashed **or** Escape-abandoned session is resumable (Escape = pause, by design). The runtime marker `resources/audio/transcription_queue/.session_ongoing` (gitignored) holds timestamp, last *completed* cycle, target dir/name, and total cycles; it's written at session start and after every saved response, and cleared only by the post-rating. When a valid marker exists, the menu prepends "Resume Session — <target> (cycle N/total)": resume restores the session, replays the confirm + cue-in to re-anchor, continues at lastCompleted + 1 (so responses keep their correct cycle numbers in the same JSON record), and routes straight to post_rating if all cycles were already done. Old two-line markers (pre target info) are rejected as unresumable. Pre-rating is intentionally skipped on resume — `pre_sud` was already recorded.
 
+## Session Notes & Handoffs
+
+- `.claude/handoffs/` — end-of-session handoff docs (`YYYY-MM-DD.md`). Read the most recent one first when picking up work: it holds repo state, likely next work, and working conventions. Older handoffs go stale — when one contradicts this file or `git log`, trust the latter.
+- `.claude/session_YYYY-MM-DD_*.md` — deep-dive notes on specific past debugging sessions (e.g. the agent connection fixes); historical reference, not current state.
+
 ## Known Loose Ends
 
 - **Audio files are not generated if they are missing on startup** (wdyn/notice_that soundbites, cue-in audio). `scripts/audio_generation/` exists but is manual.
