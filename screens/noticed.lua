@@ -69,7 +69,7 @@ function noticed._stopAndSave()
                 f:close()
                 transcription.enqueue(outPath, session.currentCycle, session.startTimestamp,
                     session_record.currentPath())
-                session.writeOngoing()
+                session.completeCycle()
             end
         end
     end

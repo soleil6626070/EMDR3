@@ -1,10 +1,54 @@
 local transcription = require("modules.transcription")
 local config        = require("config")
+local session       = require("modules.session")
 
 local menu = {}
 
-local options = { "Target Identification", "Start Session", "Quit" }
+local options = {}   -- { { label, action }, ... } — rebuilt on load
 local selected = 1
+
+--- Build the option list, prepending a Resume entry when a paused/crashed
+--- session's marker exists and its target folder is still present.
+local function buildOptions()
+    options = {}
+
+    local ongoing = session.getOngoing()
+    if ongoing then
+        local probe = io.open(ongoing.targetDir .. "/script.txt", "r")
+        if probe then
+            probe:close()
+            local name = ongoing.targetName ~= "" and ongoing.targetName or "unknown target"
+            table.insert(options, {
+                label = string.format("Resume Session — %s (cycle %d/%d)",
+                    name:gsub("_", " "),
+                    math.min(ongoing.lastCompleted + 1, ongoing.totalCycles),
+                    ongoing.totalCycles),
+                action = function()
+                    session.resume(ongoing)
+                    if session.currentCycle > session.totalCycles then
+                        -- Crashed after the final cycle: only the post-rating remains
+                        switchScreen("post_rating")
+                    else
+                        switchScreen("oscillating")
+                    end
+                end,
+            })
+        end
+    end
+
+    table.insert(options, {
+        label = "Target Identification",
+        action = function() switchScreen("target_identification") end,
+    })
+    table.insert(options, {
+        label = "Start Session",
+        action = function() switchScreen("target_select") end,
+    })
+    table.insert(options, {
+        label = "Quit",
+        action = function() love.event.quit() end,
+    })
+end
 
 local bgShader
 local time = 0
@@ -17,6 +61,7 @@ local colour2 = {0.05, 0.20, 0.40, 1.0}
 local colour3 = {0.25, 0.50, 0.65, 1.0}
 
 function menu.load()
+    buildOptions()
     selected = 1
     time = 0
     spinTime = 0
@@ -69,16 +114,16 @@ function menu.draw()
     local startY = H * 0.55
 
     for i, option in ipairs(options) do
-        local optW = fontMenu:getWidth(option)
+        local optW = fontMenu:getWidth(option.label)
         local x = (W - optW) / 2
         local y = startY + (i - 1) * 56
 
         if i == selected then
             love.graphics.setColor(1, 1, 1)
-            love.graphics.print("> " .. option .. " <", x - fontMenu:getWidth("> "), y)
+            love.graphics.print("> " .. option.label .. " <", x - fontMenu:getWidth("> "), y)
         else
             love.graphics.setColor(0.65, 0.75, 0.90)
-            love.graphics.print(option, x, y)
+            love.graphics.print(option.label, x, y)
         end
     end
 
@@ -110,13 +155,7 @@ function menu.keypressed(k)
         selected = selected + 1
         if selected > #options then selected = 1 end
     elseif k == "return" or k == "kpenter" then
-        if selected == 1 then
-            switchScreen("target_identification")
-        elseif selected == 2 then
-            switchScreen("target_select")
-        elseif selected == 3 then
-            love.event.quit()
-        end
+        options[selected].action()
     elseif k == "escape" or k == "q" then
         love.event.quit()
     end

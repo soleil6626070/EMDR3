@@ -70,10 +70,12 @@ function oscillating.load()
     hintFont    = love.graphics.newFont(14)
     confirmFont = love.graphics.newFont(22)
 
-    -- Only show the confirmation + cue-in on the very first cycle.
-    -- Subsequent cycles (returning from notice_that) go straight to oscillating.
-    if session.currentCycle <= 1 then
+    -- Show the confirmation + cue-in on the very first cycle, or once when
+    -- resuming a paused/crashed session (re-anchors to the target memory).
+    -- Other cycles (returning from notice_that) go straight to oscillating.
+    if session.currentCycle <= 1 or session.resuming then
         phase = "confirm"
+        session.resuming = false
     else
         phase = "normal"
     end
@@ -200,6 +202,10 @@ function oscillating.draw()
         local targetName = (session.selectedTargetName or "your target"):gsub("_", " ")
         local line1 = "Target: " .. targetName
         local line2 = "Are you ready to begin?"
+        if session.currentCycle > 1 then
+            line2 = string.format("Resuming at cycle %d of %d — ready to continue?",
+                session.currentCycle, session.totalCycles)
+        end
         love.graphics.print(line1, (W - confirmFont:getWidth(line1)) / 2, cy - 60)
         love.graphics.print(line2, (W - confirmFont:getWidth(line2)) / 2, cy - 10)
 

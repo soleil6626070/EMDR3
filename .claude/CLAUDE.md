@@ -94,9 +94,12 @@ graph TD
     style CIR fill:#e91e63
 ```
 
+## Session Resume
+
+A crashed **or** Escape-abandoned session is resumable (Escape = pause, by design). The runtime marker `resources/audio/transcription_queue/.session_ongoing` (gitignored) holds timestamp, last *completed* cycle, target dir/name, and total cycles; it's written at session start and after every saved response, and cleared only by the post-rating. When a valid marker exists, the menu prepends "Resume Session — <target> (cycle N/total)": resume restores the session, replays the confirm + cue-in to re-anchor, continues at lastCompleted + 1 (so responses keep their correct cycle numbers in the same JSON record), and routes straight to post_rating if all cycles were already done. Old two-line markers (pre target info) are rejected as unresumable. Pre-rating is intentionally skipped on resume — `pre_sud` was already recorded.
+
 ## Known Loose Ends
 
-- **Session resume is half-built:** `session.writeOngoing()`/`clearOngoing()` maintain the runtime marker `resources/audio/transcription_queue/.session_ongoing`, but `session.resume()` and `session.getOngoing()` are never called — no screen offers to resume a crashed session. (Leftover WAVs *are* recovered and transcribed on next launch by `transcription.init`.)
 - **Audio files are not generated if they are missing on startup** (wdyn/notice_that soundbites, cue-in audio). `scripts/audio_generation/` exists but is manual.
 - `CONSIDERATIONS.md` and `TODO.md` (both gitignored, local-only) hold open quality notes and the TII-agent improvement list.
 

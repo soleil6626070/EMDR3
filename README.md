@@ -10,6 +10,8 @@ A therapeutic Eye Movement Desensitisation & Reprocessing tool built with Lua an
 flowchart TD
     Start([Launch App]) --> Menu[Main Menu]
 
+    Menu -->|Resume Session\nafter crash or Escape| Confirm
+
     Menu -->|Target Identification| TII[Talk with ElevenLabs\nconversational AI agent\nabout your target memory]
     TII -->|Save transcript| BG[Background: LLM generates\ncue-in script + TTS audio]
     BG --> Menu
@@ -111,6 +113,11 @@ flowchart TD
 - Transcription worker now upserts responses into the JSON record (idempotent by cycle, out-of-order safe); crash recovery locates a recovered WAV's record by searching `targets/*/sessions/`.
 - Untracked the runtime `.session_ongoing` marker and gitignored `resources/audio/transcription_queue/`.
 - Live-verified with a full 6-cycle session.
+
+**Session resume implemented** (was half-built: marker written but never read)
+- Marker extended to timestamp / last *completed* cycle / target dir / name / total cycles. Fixes an off-by-one where a crash during cycle 1 would have resumed at cycle 2.
+- Menu shows "Resume Session — <target> (cycle N/total)" when a valid marker exists; resume replays confirm + cue-in, continues at the correct cycle into the same JSON record, and goes straight to post-rating if all cycles were done. Escape mid-session = pause (resumable), by decision.
+- `session.writeOngoing` now creates the queue dir itself (git had pruned the empty dir, which would have silently disabled markers when whisper is off).
 - Merged `elevenlabs` → `main` (had never been pushed), then this work as `linked-list` → `main`; both branches deleted.
 
 ### Session — 2026-06-10
