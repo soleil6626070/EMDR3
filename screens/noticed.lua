@@ -1,6 +1,7 @@
-local session       = require("modules.session")
-local wav           = require("modules.wav")
-local transcription = require("modules.transcription")
+local session        = require("modules.session")
+local wav            = require("modules.wav")
+local transcription  = require("modules.transcription")
+local session_record = require("modules.session_record")
 
 local noticed = {}
 
@@ -66,7 +67,8 @@ function noticed._stopAndSave()
             if f then
                 f:write(encoded)
                 f:close()
-                transcription.enqueue(outPath, session.currentCycle, session.startTimestamp)
+                transcription.enqueue(outPath, session.currentCycle, session.startTimestamp,
+                    session_record.currentPath())
                 session.writeOngoing()
             end
         end
@@ -75,9 +77,8 @@ end
 
 function noticed._advance()
     if session.isLastCycle() then
-        session.clearOngoing()
-        session.reset()
-        switchScreen("menu")
+        -- Post-rating screen closes out the session (clearOngoing + reset)
+        switchScreen("post_rating")
     else
         switchScreen("notice_that")
     end

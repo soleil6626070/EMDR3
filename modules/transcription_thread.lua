@@ -1,6 +1,9 @@
 -- modules/transcription_thread.lua
--- Worker thread: receives WAV file paths, runs whisper-cli, writes results
--- directly to the output file, deletes the WAV, and pushes a status notification.
+-- Worker thread: receives jobs on the request channel, runs whisper-cli, and
+-- writes results into the per-session JSON record (see modules/session_json.lua).
+-- This thread is the single writer of session record files — the main thread
+-- routes its rating writes here as "merge_record" messages so all writes to a
+-- record are serialized in channel order.
 -- Runs in an isolated love.thread — no access to love.graphics, love.audio, etc.
 
 local requestChannel = love.thread.getChannel("transcription_request")
@@ -13,49 +16,14 @@ local whisperBin   = cfg.whisper_bin
 local whisperModel = cfg.whisper_model
 local outputDir    = cfg.output_dir
 
---- Parse an existing output file into a table of {cycle, text} entries.
-local function readExistingResponses(filepath)
-    local responses = {}
-    local f = io.open(filepath, "r")
-    if not f then return responses end
+-- Threads get a fresh Lua state, so re-add the project paths before requiring
+-- shared modules (lib/json.lua, modules/session_json.lua).
+package.path = cfg.source_path .. "/lib/?.lua;"
+            .. cfg.source_path .. "/?.lua;" .. package.path
+local session_json = require("modules.session_json")
 
-    local content = f:read("*a")
-    f:close()
-
-    -- Parse "Response N: text" blocks separated by "---"
-    for cycle, text in content:gmatch("Response (%d+): ([^\n]+)") do
-        table.insert(responses, { cycle = tonumber(cycle), text = text })
-    end
-
-    return responses
-end
-
---- Write all responses (sorted by cycle) to the output file.
-local function writeOutputFile(filepath, session_id, responses)
-    -- Sort by cycle number
-    table.sort(responses, function(a, b) return a.cycle < b.cycle end)
-
-    local f = io.open(filepath, "w")
-    if not f then
-        print("[TranscriptionThread] Could not open for writing: " .. filepath)
-        return false
-    end
-
-    f:write("Session: " .. session_id .. "\n")
-    for _, resp in ipairs(responses) do
-        f:write("\n---\n\nResponse " .. resp.cycle .. ": " .. resp.text .. "\n")
-    end
-
-    f:close()
-    return true
-end
-
-while true do
-    local req = requestChannel:demand()
-
-    -- Sentinel value to shut down the thread
-    if req == "quit" then break end
-
+--- Transcribe one WAV and insert the text into its session record.
+local function handleTranscribeJob(req)
     local file_path  = req.file_path
     local cycle      = req.cycle
     local session_id = req.session_id
@@ -91,24 +59,11 @@ while true do
     os.remove(tmpBase)
 
     if success and text and text ~= "" then
-        -- Read existing output file, insert new response, rewrite
-        local outPath = outputDir .. "/session_" .. session_id .. ".txt"
-        local responses = readExistingResponses(outPath)
-
-        -- Replace existing entry for this cycle if present (idempotent on retry)
-        local found = false
-        for i, resp in ipairs(responses) do
-            if resp.cycle == cycle then
-                responses[i].text = text
-                found = true
-                break
-            end
-        end
-        if not found then
-            table.insert(responses, { cycle = cycle, text = text })
-        end
-
-        writeOutputFile(outPath, session_id, responses)
+        -- Fallback path covers WAVs recovered from sessions that predate
+        -- per-target session records.
+        local recordPath = req.record_path
+            or (outputDir .. "/session_" .. session_id .. ".json")
+        session_json.upsertResponse(recordPath, session_id, cycle, text)
 
         -- Delete the WAV file after successful transcription + save
         os.remove(file_path)
@@ -122,4 +77,19 @@ while true do
         cycle      = cycle,
         success    = success,
     })
+end
+
+while true do
+    local req = requestChannel:demand()
+
+    -- Sentinel value to shut down the thread
+    if req == "quit" then break end
+
+    if req.type == "merge_record" then
+        -- Rating/metadata write routed from the main thread. No status push:
+        -- pending/completed counters only track transcription jobs.
+        session_json.merge(req.record_path, req.fields)
+    else
+        handleTranscribeJob(req)
+    end
 end

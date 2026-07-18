@@ -199,11 +199,11 @@ function target_select.keypressed(k)
             cue_in_status_msg = "No audio yet — press R to review and generate audio first."
             return
         end
-        -- Store selected target on the session, then begin
+        -- Store selected target on the session; the pre-rating screen
+        -- starts the session once the SUD rating is confirmed
         session.selectedTargetDir  = t.dir
         session.selectedTargetName = t.name
-        session.start(config.cycles)
-        switchScreen("oscillating")
+        switchScreen("pre_rating")
 
     elseif k == "r" then
         local t = targets[selected]

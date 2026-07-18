@@ -9,14 +9,18 @@ local transcription = require("modules.transcription")
 local agent         = require("modules.agent")
 local cue_in        = require("modules.cue_in")
 
+local makeRatingScreen = require("screens.rating")
+
 local screens = {
     menu                    = require("screens.menu"),
     target_identification   = require("screens.target_identification"),
     target_select           = require("screens.target_select"),
     cue_in_review           = require("screens.cue_in_review"),
+    pre_rating              = makeRatingScreen("pre"),
     oscillating             = require("screens.oscillating"),
     noticed                 = require("screens.noticed"),
     notice_that             = require("screens.notice_that"),
+    post_rating             = makeRatingScreen("post"),
 }
 
 local currentScreen = "menu"

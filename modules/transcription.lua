@@ -25,6 +25,19 @@ local function parseFilename(filename)
     return nil, nil
 end
 
+--- Locate an existing session record for a recovered WAV by searching every
+--- target's sessions/ folder. Returns nil if none exists yet (the worker then
+--- falls back to a flat output_data/ record).
+local function findRecordPath(targetsBase, session_id)
+    local handle = io.popen('ls -1 "' .. targetsBase .. '"/*/sessions/session_'
+        .. session_id .. '.json 2>/dev/null | head -1')
+    if not handle then return nil end
+    local path = handle:read("*l")
+    handle:close()
+    if path and path ~= "" then return path end
+    return nil
+end
+
 function transcription.init(cfg)
     local sourcePath = love.filesystem.getSource()
     local whisperBin   = sourcePath .. "/" .. cfg.WHISPER_BIN
@@ -89,20 +102,36 @@ function transcription.init(cfg)
         return a.session_id < b.session_id
     end)
 
+    local targetsBase = sourcePath .. "/" .. (cfg.TARGETS_DIR or "output_data/targets")
     for _, item in ipairs(leftover) do
         local filePath = queueDir .. "/" .. item.name
-        transcription.enqueue(filePath, item.cycle, item.session_id)
+        transcription.enqueue(filePath, item.cycle, item.session_id,
+            findRecordPath(targetsBase, item.session_id))
     end
 end
 
-function transcription.enqueue(file_path, cycle, session_id)
+function transcription.enqueue(file_path, cycle, session_id, record_path)
     if not enabled then return end
     pendingCount = pendingCount + 1
     requestChannel:push({
-        file_path  = file_path,
-        cycle      = cycle,
-        session_id = session_id,
+        type        = "transcribe",
+        file_path   = file_path,
+        cycle       = cycle,
+        session_id  = session_id,
+        record_path = record_path,
     })
+end
+
+function transcription.isEnabled()
+    return enabled
+end
+
+--- Push a non-transcription message (e.g. "merge_record") to the worker so
+--- session-record writes stay serialized with response inserts.
+function transcription.pushControl(msg)
+    if not enabled then return false end
+    requestChannel:push(msg)
+    return true
 end
 
 function transcription.update()
