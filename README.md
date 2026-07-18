@@ -18,13 +18,15 @@ flowchart TD
     TS -->|R — review| Review[Review / edit\ncue-in script\nRegenerate audio]
     Review --> TS
 
-    TS -->|Enter| Confirm[Are you ready\nto begin?]
+    TS -->|Enter| PreR[Pre-rating\nSUD 0–10: how disturbing\ndoes it feel right now?]
+    PreR --> Confirm[Are you ready\nto begin?]
     Confirm -->|Enter| CueIn[Cue-in script plays\nanchors you to target memory]
     CueIn --> Osc[Oscillating dot\nbilateral stimulation]
     Osc --> WDN[What did you notice?\nauto-records your response]
-    WDN -->|Space| NT[Notice that...\nshort fade]
-    NT -->|next cycle| Osc
-    NT -->|final cycle| Menu
+    WDN -->|Space, next cycle| NT[Notice that...\nshort fade]
+    NT --> Osc
+    WDN -->|Space, final cycle| PostR[Post-rating\nSUD 0–10]
+    PostR --> Menu
 ```
 
 ---
@@ -45,6 +47,7 @@ flowchart TD
         TID["target_identification.lua\nstreams mic → agent"]
         TSel["target_select.lua\nscans output_data/targets/"]
         CIR["cue_in_review.lua\nedit script + regen audio"]
+        Rating["rating.lua factory\npre_rating / post_rating\nSUD 0–10"]
         Osc["oscillating.lua\nconfirm → cue_in → normal\n→ slowing → breathe"]
         Noticed["noticed.lua\nplay wdyn audio + record"]
         NT["notice_that.lua\nfade + nextCycle()"]
@@ -55,18 +58,20 @@ flowchart TD
         TTS["tts.lua\nElevenLabs TTS requests"]
         Trans["transcription.lua\nwhisper job queue"]
         CueIn["cue_in.lua\nLLM → script → TTS pipeline"]
+        SRec["session_record.lua\nrating/meta writes →\nworker channel"]
+        SJson["session_json.lua\nshared JSON load/merge/upsert\n(pure Lua, both threads)"]
     end
 
     subgraph threads["Worker Threads"]
         AgentT["agent_thread.lua\nWebSocket ↔ ElevenLabs\nConversational AI"]
         TTST["tts_thread.lua\nPOST → ElevenLabs\nTTS API"]
-        TransT["transcription_thread.lua\nruns whisper-cli"]
+        TransT["transcription_thread.lua\nruns whisper-cli\nsingle writer of session JSON"]
         CueInT["cue_in_thread.lua\nPOST → OpenAI/Anthropic\nPOST → ElevenLabs TTS\nsaves targets/ folder"]
     end
 
     subgraph storage["Filesystem"]
         OutData["output_data/\ntarget_image_*.txt — raw TII transcripts"]
-        Targets["output_data/targets/\n slug/transcript.txt\n slug/script.txt\n slug/cue_in.mp3"]
+        Targets["output_data/targets/slug/\n transcript.txt · script.txt\n cue_in.mp3\n sessions/session_id.json"]
         Queue["resources/audio/\ntranscription_queue/ — response WAVs"]
         Wdyn["resources/audio/wdyn/ — wdyn variants"]
     end
@@ -81,6 +86,11 @@ flowchart TD
     TID -->|transcript text| CueIn
     CueInT --> Targets
     TSel --> Targets
+    Rating --> SRec
+    SRec -->|merge_record msg| Trans
+    SRec -.->|direct write if\nwhisper disabled| SJson
+    TransT --> SJson
+    SJson --> Targets
     Osc -->|cue_in.mp3| Load
     Noticed --> Trans
     Trans --> Queue
@@ -90,6 +100,18 @@ flowchart TD
 ---
 
 ## Session Log
+
+### Session — 2026-07-18
+
+**Pre/post SUD rating screens + per-target JSON session records**
+- `screens/rating.lua` — factory producing `pre_rating` (after target select; starts the session) and `post_rating` (after the final cycle; closes the record). 0–10 scale, arrow/number keys.
+- Session records moved from flat `output_data/session_*.txt` to `output_data/targets/<slug>/sessions/session_<id>.json` — self-describing (target, started, pre/post SUD, completed, responses sorted by cycle) so a researcher can follow the narrative within a session and stack sessions per target across time.
+- `modules/session_json.lua` — shared pure-Lua load/merge/upsert helpers, required by both main thread and worker.
+- `modules/session_record.lua` — main-thread API. Rating writes are routed through the transcription worker's channel (`merge_record` messages) so the worker remains the **single writer** of each record — no read-modify-write races between threads. Direct write fallback when whisper is disabled.
+- Transcription worker now upserts responses into the JSON record (idempotent by cycle, out-of-order safe); crash recovery locates a recovered WAV's record by searching `targets/*/sessions/`.
+- Untracked the runtime `.session_ongoing` marker and gitignored `resources/audio/transcription_queue/`.
+- Live-verified with a full 6-cycle session.
+- Merged `elevenlabs` → `main` (had never been pushed), then this work as `linked-list` → `main`; both branches deleted.
 
 ### Session — 2026-06-10
 
