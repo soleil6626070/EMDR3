@@ -12,8 +12,13 @@ flowchart TD
 
     Menu -->|Resume Session\nafter crash or Escape| Confirm
 
-    Menu -->|Target Identification| TII[Talk with ElevenLabs\nconversational AI agent\nabout your target memory]
-    TII -->|Save transcript| BG[Background: LLM generates\ncue-in script + TTS audio]
+    Menu -->|Resume Identification\nafter crash or Escape| NC
+
+    Menu -->|Target Identification| Prel[Settling intro +\n'cast your mind back' audio]
+    Prel --> TII[Short live-agent call:\nfind the exact freeze-frame image\nends with 'Here is your final image...']
+    TII --> NC[Guided spoken stages:\nnegative belief → positive belief\n→ VoC 1–7 → emotions → SUD 0–10\n→ body sensations\nwith gentle AI follow-ups]
+    NC --> Rev[Review screen:\nedit / re-record any section]
+    Rev -->|Confirm| BG[Background: LLM generates\ncue-in script + TTS audio]
     BG --> Menu
 
     Menu -->|Start Session| TS[Target Select\nPick a saved target image]
@@ -102,6 +107,16 @@ flowchart TD
 ---
 
 ## Session Log
+
+### Session — 2026-07-19
+
+**Target identification rebuilt: hybrid narrow agent + scripted assessment** (branch `identification-rebuild`; design in `specs/target_identification_flow.md`)
+- The old single 15–20 min agent conversation (~$2/target, uncapped, misbehaving) is replaced. The live ElevenLabs agent now handles **only** the target-image negotiation (server caps: 480 s max, 90 s silence; ritual ending "Here is your final image: …" + verbal agreement + end_call). Everything else is near-free: cached TTS interludes/questions (one app voice), local whisper, small LLM adequacy checks with ≤ `config.IDENT_MAX_FOLLOWUPS` follow-ups, rating screens, and a sectioned review. Worst case ~$0.70/target, typical ~$0.35.
+- New screens `ident_prelude` / `ident_agent` / `ident_stage` (one screen, four spoken stages) / `ident_review`, plus VoC (1–7) and SUD (0–10) from the now-parameterized `rating.lua` factory. Thinking gaps play a bridge phrase with a breathing circle; the background shader speeds up while the app works.
+- New modules: `identification` (flow table, write-through checkpoints to `assessment.json`, `.identification_ongoing` marker, resume from first incomplete step), `assessment_json`, `check`, `extraction`, generic `llm` worker (+ shared `lib/llm_client.lua`); `transcription.enqueueRaw` for callback-routed raw jobs in a separate `ident_queue/`.
+- All prose is editable files: `prompts/*` (agent prompt with sectioned pacing/ritual, per-stage checks grounded in `emdr_knowledge/positive_negative_cognitions.md`, extraction, cue-in) and the cached-audio `manifest.lua`. Agent prompt/first message inject into the dashboard payload at sync time (`build_agent_payload.sh`).
+- Transcript is saved to disk before extraction (a completed call can never be lost); cue-in generation now consumes the structured assessment and auto-runs on review confirm. Old flow archived in `legacy/`.
+- Verified headlessly (23-assertion lifecycle test, live LLM check + extraction tests incl. the capped-out salvage path). **Pending user gates:** audio generation run, agent dashboard sync + live call, full end-to-end run.
 
 ### Session — 2026-07-18
 
