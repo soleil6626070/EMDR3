@@ -33,12 +33,16 @@ if [[ -z "$API_KEY" ]]; then
   exit 1
 fi
 
+PAYLOAD="$(mktemp)"
+trap 'rm -f "$PAYLOAD"' EXIT
+"$REPO_ROOT/scripts/build_agent_payload.sh" > "$PAYLOAD"
+
 echo "Posting workflow to $API_URL ..."
 
 RESPONSE="$(curl -sS -X POST "$API_URL" \
   -H "Content-Type: application/json" \
   -H "xi-api-key: $API_KEY" \
-  --data-binary "@$WORKFLOW_FILE")"
+  --data-binary "@$PAYLOAD")"
 
 # Pretty-print response for the user.
 echo "--- API response ---"

@@ -37,7 +37,10 @@ config.NOTICE_SPEECH_SPEED  = 0.9   -- "What did you notice?"
 
 -- ElevenLabs Conversational AI Agent
 config.ELEVENLABS_AGENT_ID  = config.ELEVENLABS_AGENT_ID_EMDR or ""
-config.AGENT_MAX_DURATION   = 600   -- seconds (10 min safety timeout)
+config.AGENT_MAX_DURATION   = 500   -- local safety net; must stay ABOVE the
+                                    -- server cap (max_duration_seconds = 480 in
+                                    -- scripts/agent_workflow.json) so the server
+                                    -- ends the call gracefully first
 config.AGENT_OUTPUT_DIR     = "output_data"
 
 -- Identification flow (assessment stages after the agent call)
