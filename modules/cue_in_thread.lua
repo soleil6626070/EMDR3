@@ -76,9 +76,55 @@ end
 -- Main loop
 ----------------------------------------------------------------------
 
+--- v2 path: the target folder already exists (created after extraction); the
+--- LLM turns the structured assessment into just the script, then TTS renders
+--- the audio. Response contract: {"script": "..."}.
+local function generateFromAssessment(req)
+    local llmText, llmErr = llm_client.chat({
+        provider = cfg.provider,
+        model    = cfg.model,
+        api_key  = cfg.provider == "anthropic" and cfg.anthropic_api_key or cfg.openai_api_key,
+        system   = cfg.assessment_prompt,
+        user     = req.assessment,
+    })
+
+    if not llmText then
+        pushError("LLM call failed: " .. tostring(llmErr))
+        return
+    end
+
+    local parsed = llm_client.parse_json(llmText)
+    if not parsed or type(parsed.script) ~= "string" or parsed.script == "" then
+        pushError("LLM returned unexpected format: " .. tostring(llmText):sub(1, 200))
+        return
+    end
+
+    local targetDir = cfg.targets_dir .. "/" .. req.slug
+    mkdirp(targetDir)
+
+    local _, sErr = writeFile(targetDir .. "/script.txt", parsed.script)
+    if sErr then
+        pushError("Failed to save script: " .. tostring(sErr))
+        return
+    end
+
+    local ttsOk, ttsErr = generateTTS(parsed.script, targetDir .. "/cue_in.mp3")
+    if not ttsOk then
+        pushError("TTS failed: " .. tostring(ttsErr))
+        return
+    end
+
+    responseChannel:push({ success = true, slug = req.slug })
+end
+
 while true do
     local req = requestChannel:demand()
     if req == "quit" then break end
+
+    if req.slug then
+        generateFromAssessment(req)
+        goto continue
+    end
 
     local transcript = req.transcript
 
@@ -124,4 +170,6 @@ while true do
             end
         end
     end
+
+    ::continue::
 end

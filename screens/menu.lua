@@ -2,6 +2,7 @@ local transcription  = require("modules.transcription")
 local config         = require("config")
 local session        = require("modules.session")
 local identification = require("modules.identification")
+local cue_in         = require("modules.cue_in")
 
 local menu = {}
 
@@ -154,6 +155,21 @@ function menu.draw()
         local statusW = fontHint:getWidth(statusText)
         love.graphics.setColor(0.9, 0.8, 0.3)
         love.graphics.print(statusText, (W - statusW) / 2, H - 64)
+    end
+
+    -- Cue-in generation indicator (runs in the background after review confirm)
+    local cueStatus = cue_in.getStatus()
+    if cueStatus == "generating" then
+        love.graphics.setFont(fontHint)
+        local msg = "Generating cue-in audio..."
+        love.graphics.setColor(0.9, 0.8, 0.3)
+        love.graphics.print(msg, (W - fontHint:getWidth(msg)) / 2, H - 88)
+    elseif cueStatus == "error" then
+        love.graphics.setFont(fontHint)
+        local msg = "Cue-in generation failed: " .. tostring(cue_in.getError()):sub(1, 80)
+            .. "   (T on target select retries)"
+        love.graphics.setColor(0.9, 0.5, 0.4)
+        love.graphics.print(msg, (W - fontHint:getWidth(msg)) / 2, H - 88)
     end
 
     -- Controls hint

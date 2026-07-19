@@ -26,6 +26,7 @@ local screens = {
     ident_prelude           = require("screens.ident_prelude"),
     ident_agent             = require("screens.ident_agent"),
     ident_stage             = require("screens.ident_stage"),
+    ident_review            = require("screens.ident_review"),
     ident_voc               = makeRatingScreen(identification.ratingOpts("voc")),
     ident_sud               = makeRatingScreen(identification.ratingOpts("sud")),
 }

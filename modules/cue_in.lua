@@ -66,13 +66,19 @@ function cue_in.init(cfg)
         elevenlabs_model_id = config.ELEVENLABS_MODEL_ID or "eleven_multilingual_v2",
         targets_dir       = love.filesystem.getSource() .. "/" .. (config.TARGETS_DIR or "output_data/targets"),
         system_prompt     = SYSTEM_PROMPT,
+        -- v2 path: script generation from a structured assessment record; the
+        -- prompt is editable prose in prompts/cue_in.md
+        assessment_prompt = love.filesystem.read("prompts/cue_in.md") or "",
     })
     thread:start()
 end
 
---- Begin generating a cue-in script from a TII transcript.
--- @param transcriptText  The full text of the transcript file
-function cue_in.generate(transcriptText)
+--- Begin generating a cue-in script.
+-- @param arg  Either the full text of a TII transcript (legacy path), or a
+--             table { slug = <existing target slug>, assessment = <the
+--             assessment.json content as text> } — generates script + audio
+--             into the already-existing target folder.
+function cue_in.generate(arg)
     if status == "generating" then
         print("[CueIn] Already generating, ignoring request")
         return
@@ -80,7 +86,11 @@ function cue_in.generate(transcriptText)
     status    = "generating"
     errorMsg  = nil
     lastTarget = nil
-    requestChannel:push({ transcript = transcriptText })
+    if type(arg) == "table" then
+        requestChannel:push({ slug = arg.slug, assessment = arg.assessment })
+    else
+        requestChannel:push({ transcript = arg })
+    end
 end
 
 --- Call every frame from love.update(dt).

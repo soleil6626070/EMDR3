@@ -24,6 +24,9 @@ identification.targetDir  = nil   -- absolute path to output_data/targets/<slug>
 identification.targetName = nil   -- the slug
 identification.started    = nil   -- "YYYY-MM-DD HH:MM:SS"
 identification.stepIndex  = 0
+-- Set by the review screen's re-record: the next advance() returns to review
+-- instead of continuing the flow.
+identification.reviewReturn = false
 
 ----------------------------------------------------------------------
 -- Step table
@@ -142,8 +145,16 @@ function identification.beginTarget(t)
 end
 
 --- Advance to the next step's screen. The step index is derived from the
---- record on resume, so this is safe to call from any step screen.
+--- record on resume, so this is safe to call from any step screen. When a
+--- re-record was launched from the review screen, advance returns there
+--- instead of continuing the flow.
 function identification.advance()
+    if identification.reviewReturn then
+        identification.reviewReturn = false
+        identification.stepIndex = stepIndexById["review"]
+        switchScreen("ident_review")
+        return
+    end
     identification.stepIndex = identification.stepIndex + 1
     local step = identification.steps[identification.stepIndex]
     if step then
@@ -151,6 +162,14 @@ function identification.advance()
     else
         switchScreen("menu")
     end
+end
+
+--- Jump to a specific step (used by the review screen's re-record), with the
+--- completing advance() returning to review.
+function identification.rerunStep(stepId)
+    identification.stepIndex = stepIndexById[stepId]
+    identification.reviewReturn = true
+    switchScreen(identification.steps[identification.stepIndex].screen)
 end
 
 function identification.currentStep()
@@ -195,6 +214,7 @@ function identification.reset()
     identification.targetName = nil
     identification.started    = nil
     identification.stepIndex  = 0
+    identification.reviewReturn = false
 end
 
 ----------------------------------------------------------------------
