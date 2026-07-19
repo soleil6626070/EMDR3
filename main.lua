@@ -15,7 +15,6 @@ local identification   = require("modules.identification")
 
 local screens = {
     menu                    = require("screens.menu"),
-    target_identification   = require("screens.target_identification"),
     target_select           = require("screens.target_select"),
     cue_in_review           = require("screens.cue_in_review"),
     pre_rating              = makeRatingScreen("pre"),

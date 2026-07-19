@@ -173,12 +173,24 @@ function target_select.keypressed(k)
         return
     end
 
-    -- Dev shortcut: generate a target from the most recent transcript without
-    -- needing to run a full TII agent session.
+    -- Regenerate the selected target's cue-in from its assessment record
+    -- (retry path if generation failed after review). Falls back to the
+    -- legacy newest-transcript path for pre-assessment targets.
     if k == "t" then
         local cue_in = require("modules.cue_in")
         if cue_in.getStatus() ~= "generating" then
-            generateFromLastTranscript()
+            local t = targets[selected]
+            local raw
+            if t then
+                local f = io.open(t.dir .. "/assessment.json", "r")
+                if f then raw = f:read("*a"); f:close() end
+            end
+            if raw then
+                cue_in.generate({ slug = t.name, assessment = raw })
+                cue_in_status_msg = "Regenerating cue-in from assessment: " .. t.name
+            else
+                generateFromLastTranscript()
+            end
         end
         return
     end

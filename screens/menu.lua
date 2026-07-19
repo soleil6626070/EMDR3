@@ -38,9 +38,20 @@ local function buildOptions()
         end
     end
 
+    -- Resume a paused/crashed identification (marker validated against its
+    -- assessment record; the first incomplete step is derived from the record)
+    local identOngoing = identification.getOngoing()
+    if identOngoing then
+        table.insert(options, {
+            label = string.format("Resume Identification — %s (%s)",
+                identOngoing.targetName:gsub("_", " "), identOngoing.nextStepLabel),
+            action = function() identification.resume(identOngoing) end,
+        })
+    end
+
     table.insert(options, {
         label = "Target Identification",
-        action = function() switchScreen("target_identification") end,
+        action = function() identification.begin() end,
     })
     table.insert(options, {
         label = "Start Session",
