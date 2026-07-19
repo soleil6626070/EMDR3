@@ -17,6 +17,7 @@ local wav            = require("modules.wav")
 local transcription  = require("modules.transcription")
 local tts            = require("modules.tts")
 local identification = require("modules.identification")
+local check          = require("modules.check")
 
 local ident_stage = {}
 
@@ -42,13 +43,6 @@ local pulseTimer, breatheTimer, speedMult
 local fontQuestion, fontStatus, fontHint
 local bgShader, shaderTime, spinTime
 
-----------------------------------------------------------------------
--- Adequacy check — STUBBED until modules/check.lua lands: every non-empty
--- answer is accepted verbatim.
-----------------------------------------------------------------------
-local function runCheck(answerText, cb)
-    cb(true, { adequate = true, refined_answer = answerText, followup = nil })
-end
 
 ----------------------------------------------------------------------
 -- Audio helpers
@@ -185,7 +179,7 @@ local function handleTranscript(res)
     lastUsable = res.text
     exchanges[#exchanges + 1] = { question = currentQuestion, response = res.text }
 
-    runCheck(res.text, function(ok, result)
+    check.evaluate(step, exchanges, function(ok, result)
         if not screenAlive then return end
         checkResult = { ok = ok, result = result }
     end)
