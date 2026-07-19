@@ -20,6 +20,11 @@ local enabled = false
 local queueDir
 local outputDir
 
+-- Raw jobs (identification answers, etc.): transcribe a WAV and hand the text
+-- to a callback instead of a session record. Keyed by job_id, like tts.lua.
+local rawCallbacks = {}
+local nextJobId = 0
+
 --- Parse a queue filename into session_id and cycle number.
 -- Expected format: response_{timestamp}_cycle_{N}.wav
 local function parseFilename(filename)
@@ -68,6 +73,9 @@ function transcription.init(cfg)
     outputDir = sourcePath .. "/output_data"
     os.execute('mkdir -p "' .. queueDir .. '"')
     os.execute('mkdir -p "' .. outputDir .. '"')
+    -- Separate queue for raw jobs: kept out of transcription_queue/ so the
+    -- session crash-recovery scan below never misreads their filenames.
+    os.execute('mkdir -p "' .. sourcePath .. '/resources/audio/ident_queue"')
 
     enabled = true
 
@@ -127,10 +135,45 @@ function transcription.enqueue(file_path, cycle, session_id, record_path)
     })
 end
 
+--- Transcribe a WAV outside any session record. The callback receives
+--- (success, text); on success the WAV is deleted, on failure it is preserved.
+-- @param file_path absolute path to a WAV (use resources/audio/ident_queue/)
+-- @param callback  function(success, text_or_nil)
+function transcription.enqueueRaw(file_path, callback)
+    if not enabled then
+        print("[Transcription] disabled — cannot transcribe " .. tostring(file_path))
+        if callback then callback(false, nil) end
+        return
+    end
+    nextJobId = nextJobId + 1
+    rawCallbacks[nextJobId] = callback
+    pendingCount = pendingCount + 1
+    requestChannel:push({
+        type      = "transcribe_raw",
+        file_path = file_path,
+        job_id    = nextJobId,
+    })
+end
+
 --- Handle one worker result on the main thread: save the transcript into the
 --- session record, then delete the WAV. Deleting only after a successful save
 --- keeps responses crash-safe; a failed job preserves its WAV for retry.
 local function handleResult(status)
+    -- Raw job: hand the text to its callback; no record involved. Empty text is
+    -- a successful transcription (the caller decides what silence means).
+    if status.job_id then
+        local cb = rawCallbacks[status.job_id]
+        rawCallbacks[status.job_id] = nil
+        if status.success then
+            os.remove(status.file_path)
+            if cb then cb(true, status.text or "") end
+        else
+            print("[Transcription] Raw job failed for " .. tostring(status.file_path))
+            if cb then cb(false, nil) end
+        end
+        return
+    end
+
     if status.success and status.text and status.text ~= "" then
         local recordPath = status.record_path
         if not recordPath then

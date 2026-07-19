@@ -56,6 +56,7 @@ while true do
         cycle       = req.cycle,
         file_path   = req.file_path,
         record_path = req.record_path,
+        job_id      = req.job_id,
         success     = success,
         text        = text,
     })

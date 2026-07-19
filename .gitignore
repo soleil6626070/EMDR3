@@ -21,3 +21,4 @@ CONSIDERATIONS.md
 
 # Runtime transcription queue (WAVs + session marker)
 resources/audio/transcription_queue/
+resources/audio/ident_queue/
