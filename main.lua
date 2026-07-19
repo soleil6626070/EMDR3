@@ -23,6 +23,7 @@ local screens = {
     noticed                 = require("screens.noticed"),
     notice_that             = require("screens.notice_that"),
     post_rating             = makeRatingScreen("post"),
+    ident_prelude           = require("screens.ident_prelude"),
     ident_stage             = require("screens.ident_stage"),
     ident_voc               = makeRatingScreen(identification.ratingOpts("voc")),
     ident_sud               = makeRatingScreen(identification.ratingOpts("sud")),
