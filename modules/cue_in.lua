@@ -23,6 +23,7 @@ local config
 local status    = "idle"
 local lastTarget = nil
 local errorMsg  = nil
+local assessmentPromptMissing = false
 
 -- The system prompt that instructs the LLM how to produce the cue-in script.
 -- Follows Shapiro's Phase 4 protocol: image → NC (verbatim) → body sensation.
@@ -49,6 +50,12 @@ Respond with ONLY a JSON object in this exact format (no markdown, no explanatio
 function cue_in.init(cfg)
     config = cfg
 
+    local assessmentPrompt = love.filesystem.read("prompts/cue_in.md")
+    if not assessmentPrompt then
+        assessmentPromptMissing = true
+        print("[CueIn] WARNING: prompts/cue_in.md not found — assessment-based generation will fail")
+    end
+
     requestChannel  = love.thread.getChannel("cue_in_request")
     responseChannel = love.thread.getChannel("cue_in_response")
     configChannel   = love.thread.getChannel("cue_in_config")
@@ -68,7 +75,7 @@ function cue_in.init(cfg)
         system_prompt     = SYSTEM_PROMPT,
         -- v2 path: script generation from a structured assessment record; the
         -- prompt is editable prose in prompts/cue_in.md
-        assessment_prompt = love.filesystem.read("prompts/cue_in.md") or "",
+        assessment_prompt = assessmentPrompt or "",
     })
     thread:start()
 end
@@ -81,6 +88,12 @@ end
 function cue_in.generate(arg)
     if status == "generating" then
         print("[CueIn] Already generating, ignoring request")
+        return
+    end
+    if type(arg) == "table" and assessmentPromptMissing then
+        status   = "error"
+        errorMsg = "prompts/cue_in.md is missing — cannot generate from assessment"
+        print("[CueIn] " .. errorMsg)
         return
     end
     status    = "generating"

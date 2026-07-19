@@ -84,10 +84,16 @@ local function saveRawTranscript()
     lines[#lines + 1] = "===== END OF TRANSCRIPT ====="
     local content = table.concat(lines, "\n") .. "\n"
 
-    local path = love.filesystem.getSource() .. "/" .. (config.AGENT_OUTPUT_DIR or "output_data")
-        .. "/target_image_" .. os.date("%Y%m%d_%H%M%S") .. ".txt"
+    local dir = love.filesystem.getSource() .. "/" .. (config.AGENT_OUTPUT_DIR or "output_data")
+    os.execute('mkdir -p "' .. dir .. '"')
+    local path = dir .. "/target_image_" .. os.date("%Y%m%d_%H%M%S") .. ".txt"
     local f = io.open(path, "w")
-    if f then f:write(content); f:close() end
+    if f then
+        f:write(content)
+        f:close()
+    else
+        print("[IdentAgent] WARNING: could not save transcript to " .. path)
+    end
     return content
 end
 
@@ -177,7 +183,14 @@ function ident_agent.update(dt)
             -- lower and fires first with a graceful conversation end.
             if config.AGENT_MAX_DURATION and elapsed >= config.AGENT_MAX_DURATION then
                 agent.stop()
+                stopMic()
             end
+        end
+
+        -- Backstop: never leave the mic recording once the call is over,
+        -- even if the worker wedges without a clean "closed" event
+        if not agent.isActive() and mic then
+            stopMic()
         end
 
         local status = agent.getStatus()

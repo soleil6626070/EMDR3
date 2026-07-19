@@ -107,6 +107,7 @@ function identification.begin()
     identification.targetName = nil
     identification.started    = os.date("%Y-%m-%d %H:%M:%S")
     identification.stepIndex  = 1
+    identification.reviewReturn = false
     sweepIdentQueue()
     switchScreen("ident_prelude")
 end
@@ -119,10 +120,18 @@ end
 function identification.beginTarget(t)
     local base = src() .. "/" .. (config.TARGETS_DIR or "output_data/targets")
 
+    local function occupied(dir)
+        for _, name in ipairs({ "assessment.json", "script.txt", "transcript.txt", "cue_in.mp3" }) do
+            local f = io.open(dir .. "/" .. name, "r")
+            if f then f:close(); return true end
+        end
+        return false
+    end
+
     local slug = t.slug
     local dir = base .. "/" .. slug
     local n = 1
-    while io.open(dir .. "/assessment.json", "r") or io.open(dir .. "/script.txt", "r") do
+    while occupied(dir) do
         n = n + 1
         slug = t.slug .. "_" .. n
         dir = base .. "/" .. slug
@@ -289,6 +298,8 @@ function identification.resume(o)
     identification.targetName = o.targetName
     identification.started    = o.started
     identification.stepIndex  = stepIndexById[o.nextStepId]
+    -- A re-record abandoned via Escape must not hijack the resumed flow
+    identification.reviewReturn = false
     sweepIdentQueue()
     switchScreen(identification.steps[identification.stepIndex].screen)
 end

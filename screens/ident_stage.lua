@@ -38,6 +38,8 @@ local checkResult      -- set by the check callback, consumed in update()
 local screenAlive     -- guards stale async callbacks after Escape/advance
 local followupState   -- "waiting" (TTS generating / bridge playing) | "playing"
 local followupFailed  -- TTS failed: fall back to on-screen text only
+local followupTimer   -- seconds waiting for follow-up TTS; bounded so a dead
+                      -- TTS worker can't strand the user on the breathing circle
 
 local pulseTimer, breatheTimer, speedMult
 local fontQuestion, fontStatus, fontHint
@@ -97,6 +99,13 @@ local function startThinking()
     source = playFromDir(BRIDGE_DIR)
 end
 
+--- nil for empty/non-string values, so `or` fallback chains skip them
+--- (Lua treats "" as truthy).
+local function nonEmpty(s)
+    if type(s) == "string" and s ~= "" then return s end
+    return nil
+end
+
 --- Save the stage and move on.
 local function accept(answer, flagged)
     identification.setAnswer(step.stage, {
@@ -111,7 +120,7 @@ local function accept(answer, flagged)
 end
 
 local function acceptCapped(refined)
-    accept(refined or lastUsable or "(no answer captured)", true)
+    accept(nonEmpty(refined) or lastUsable or "(no answer captured)", true)
 end
 
 local function followupsExhausted()
@@ -194,8 +203,8 @@ local function handleCheck(res)
 
     local r = res.result
     if r.adequate then
-        accept(r.refined_answer or lastUsable, false)
-    elseif followupsExhausted() or not r.followup then
+        accept(nonEmpty(r.refined_answer) or lastUsable, false)
+    elseif followupsExhausted() or not nonEmpty(r.followup) then
         acceptCapped(r.refined_answer)
     else
         -- Ask the follow-up: TTS it now; it plays once the bridge finishes
@@ -203,6 +212,7 @@ local function handleCheck(res)
         phase = "followup"
         followupState = "waiting"
         followupFailed = false
+        followupTimer = 0
         tts.speak(r.followup, {}, function(ok, ttsSource)
             if not screenAlive then return end
             if ok then
@@ -234,6 +244,7 @@ function ident_stage.load()
     screenAlive      = true
     followupState    = nil
     followupFailed   = false
+    followupTimer    = 0
 
     pulseTimer   = 0
     breatheTimer = 0
@@ -285,6 +296,12 @@ function ident_stage.update(dt)
         -- While the TTS is still generating, the breathing circle holds the gap.
         if phase == "followup" then
             if followupState == "waiting" then
+                -- Bound the wait: if the TTS response never arrives, fall back
+                -- to the on-screen question text instead of hanging
+                followupTimer = (followupTimer or 0) + dt
+                if followupTimer > 20 and not followupSource then
+                    followupFailed = true
+                end
                 local bridgeDone = not (source and source:isPlaying())
                 if bridgeDone then
                     if followupSource then
