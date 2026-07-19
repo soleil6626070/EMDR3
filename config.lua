@@ -40,6 +40,10 @@ config.ELEVENLABS_AGENT_ID  = config.ELEVENLABS_AGENT_ID_EMDR or ""
 config.AGENT_MAX_DURATION   = 600   -- seconds (10 min safety timeout)
 config.AGENT_OUTPUT_DIR     = "output_data"
 
+-- Identification flow (assessment stages after the agent call)
+config.IDENT_MAX_FOLLOWUPS = 3   -- max follow-up questions per stage before
+                                 -- accepting the best answer and flagging it
+
 -- Whisper (local transcription)
 config.WHISPER_BIN   = "bin/whisper-cli"
 config.WHISPER_MODEL = "models/ggml-small.en.bin"

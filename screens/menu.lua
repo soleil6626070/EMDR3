@@ -1,6 +1,7 @@
-local transcription = require("modules.transcription")
-local config        = require("config")
-local session       = require("modules.session")
+local transcription  = require("modules.transcription")
+local config         = require("config")
+local session        = require("modules.session")
+local identification = require("modules.identification")
 
 local menu = {}
 
@@ -44,6 +45,23 @@ local function buildOptions()
         label = "Start Session",
         action = function() switchScreen("target_select") end,
     })
+    -- DEV: jump straight into the assessment stages with a stubbed image,
+    -- skipping prelude + agent call. Removed once the full flow is wired.
+    table.insert(options, {
+        label = "DEV: Stage Test",
+        action = function()
+            identification.reset()
+            identification.started = os.date("%Y-%m-%d %H:%M:%S")
+            identification.beginTarget({
+                slug = "dev_stage_test",
+                image = "you are standing alone in the rain outside the school gates",
+                confirmed = true,
+            })
+            identification.stepIndex = 1   -- image step; advance lands on nc
+            identification.advance()
+        end,
+    })
+
     table.insert(options, {
         label = "Quit",
         action = function() love.event.quit() end,

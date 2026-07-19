@@ -11,6 +11,7 @@ local cue_in        = require("modules.cue_in")
 local llm           = require("modules.llm")
 
 local makeRatingScreen = require("screens.rating")
+local identification   = require("modules.identification")
 
 local screens = {
     menu                    = require("screens.menu"),
@@ -22,6 +23,9 @@ local screens = {
     noticed                 = require("screens.noticed"),
     notice_that             = require("screens.notice_that"),
     post_rating             = makeRatingScreen("post"),
+    ident_stage             = require("screens.ident_stage"),
+    ident_voc               = makeRatingScreen(identification.ratingOpts("voc")),
+    ident_sud               = makeRatingScreen(identification.ratingOpts("sud")),
 }
 
 local currentScreen = "menu"
